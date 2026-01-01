@@ -1,0 +1,31 @@
+// Примерная бизнес-модель
+const businessModel = {
+  cityPopulation: 60000,
+  targetMarketShare: 0.05, // 5% населения
+  dailyActiveUsers: 60000 * 0.05 * 0.1, // 5% от целевой аудитории ежедневно
+  averageOrderValue: 800, // рублей
+  ordersPerDay: 300, // начальная цель
+  revenuePerDay: 300 * 800, // 240,000 рублей
+  margin: 0.25, // 25%
+  profitPerDay: 240000 * 0.25, // 60,000 рублей
+  
+  // Затраты
+  costs: {
+    warehouseRent: 30000, // руб/мес
+    salaries: 150000, // 3 сборщика + 5 курьеров
+    marketing: 50000,
+    hosting: 10000,
+    totalMonthly: 240000
+  },
+  
+  // Окупаемость
+  breakEven: function() {
+    const monthlyProfit = this.profitPerDay * 30;
+    const monthlyCost = this.costs.totalMonthly;
+    return monthlyCost / (monthlyProfit - monthlyCost);
+  }
+};
+
+console.log(`Доход в день: ${businessModel.revenuePerDay} руб`);
+console.log(`Прибыль в день: ${businessModel.profitPerDay} руб`);
+console.log(`Окупаемость: ${businessModel.breakEven().toFixed(1)} месяцев`);

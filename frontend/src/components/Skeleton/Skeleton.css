@@ -1,0 +1,240 @@
+/* ===== АНИМАЦИЯ СКЕЛЕТОНА ===== */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite ease-in-out;
+  border-radius: 4px;
+}
+
+/* ===== СКЕЛЕТОН КАРТОЧКИ ТОВАРА ===== */
+.skeleton-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
+.skeleton-image {
+  height: 120px;
+  background: #f3f4f6;
+  border-radius: 8px 8px 0 0;
+}
+
+.skeleton-content {
+  padding: 12px;
+}
+
+.skeleton-line {
+  height: 16px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-line--title {
+  width: 80%;
+  height: 18px;
+}
+
+.skeleton-line--category {
+  width: 60%;
+  height: 14px;
+}
+
+.skeleton-line--price {
+  width: 40%;
+  height: 20px;
+}
+
+.skeleton-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.skeleton-button {
+  width: 90px;
+  height: 36px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+/* ===== СКЕЛЕТОН КОРЗИНЫ ===== */
+.cart-skeleton {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.skeleton-line--header {
+  width: 120px;
+  height: 24px;
+}
+
+.skeleton-button--small {
+  width: 70px;
+  height: 32px;
+}
+
+.cart-items-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cart-item-skeleton {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  align-items: center;
+}
+
+.skeleton-circle {
+  width: 32px;
+  height: 32px;
+  background: #f3f4f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-circle--small {
+  width: 28px;
+  height: 28px;
+}
+
+.skeleton-circle--remove {
+  width: 28px;
+  height: 28px;
+}
+
+.skeleton-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-line--short {
+  width: 50%;
+}
+
+.skeleton-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.skeleton-line--quantity {
+  width: 40px;
+  height: 28px;
+}
+
+.skeleton-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* ===== СКЕЛЕТОН ИТОГОВ ===== */
+.cart-summary-skeleton {
+  border-top: 2px solid #e5e7eb;
+  padding-top: 20px;
+}
+
+.skeleton-summary-row {
+  display: flex;
+  justify-content: space-between;
+  height: 20px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeleton-total {
+  height: 40px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.skeleton-button--large {
+  width: 100%;
+  height: 48px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+/* ===== СКЕЛЕТОН ШАПКИ ===== */
+.header-skeleton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.skeleton-logo {
+  width: 150px;
+  height: 24px;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.skeleton-controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.skeleton-icon-button {
+  width: 40px;
+  height: 40px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.skeleton-cart-summary {
+  width: 100px;
+  height: 40px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+/* ===== МЕДИА-ЗАПРОСЫ ===== */
+@media (min-width: 768px) {
+  .skeleton-image {
+    height: 140px;
+  }
+
+  .skeleton-line--title {
+    height: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .skeleton-image {
+    height: 160px;
+  }
+}

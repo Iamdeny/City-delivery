@@ -1,0 +1,85 @@
+.breadcrumbs {
+  margin-bottom: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.breadcrumbs-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumbs-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumbs-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.breadcrumbs-link:hover:not(:disabled) {
+  background: var(--surface);
+  text-decoration: underline;
+}
+
+.breadcrumbs-link:disabled {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.breadcrumbs-link.active {
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.breadcrumbs-current {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 4px 8px;
+}
+
+.breadcrumbs-current.active {
+  color: var(--primary-dark);
+}
+
+.breadcrumbs-separator {
+  color: var(--text-secondary);
+  font-size: 12px;
+  user-select: none;
+}
+
+/* Мобильные стили */
+@media (max-width: 767px) {
+  .breadcrumbs {
+    padding: 8px 0;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .breadcrumbs-list {
+    flex-wrap: nowrap;
+  }
+
+  .breadcrumbs-link,
+  .breadcrumbs-current {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+}
