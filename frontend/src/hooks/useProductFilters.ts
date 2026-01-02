@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Product } from '../types/product';
 
 export type SortOption =
@@ -8,313 +8,214 @@ export type SortOption =
   | 'name-asc'
   | 'name-desc';
 
+export interface FilterState {
+  searchQuery: string;
+  selectedCategories: string[];
+  priceRange: [number, number];
+  sortOption: SortOption;
+}
+
+export interface UseProductFiltersProps {
+  products: Product[];
+}
+
 export interface UrlFilterState {
   search: string;
   categories: string[];
-  priceRange: [number, number];
+  minPrice: number;
+  maxPrice: number;
   sort: SortOption;
 }
 
-interface UseProductFiltersProps {
-  products: Product[];
-  initialSearch?: string;
-  initialCategories?: string[];
-  initialSort?: SortOption;
-  initialPriceRange?: [number, number];
-}
+export const useProductFilters = ({ products }: UseProductFiltersProps) => {
+  // Состояние фильтров
+  const [filters, setFilters] = useState<FilterState>({
+    searchQuery: '',
+    selectedCategories: [],
+    priceRange: [0, 1000],
+    sortOption: 'relevance',
+  });
 
-export const useProductFilters = ({
-  products,
-  initialSearch = '',
-  initialCategories = [],
-  initialSort = 'relevance',
-  initialPriceRange,
-}: UseProductFiltersProps) => {
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [selectedCategories, setSelectedCategories] =
-    useState<string[]>(initialCategories);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
-  const [sortOption, setSortOption] = useState<SortOption>(initialSort);
-
-  // Вычисляем минимальную и максимальную цену из всех товаров
+  // Вычисляем минимальную и максимальную цены
   const { minPrice, maxPrice } = useMemo(() => {
-    if (!products || products.length === 0) {
-      return { minPrice: 0, maxPrice: 10000 };
+    if (products.length === 0) {
+      return { minPrice: 0, maxPrice: 1000 };
     }
 
-    // Безопасное получение цен
-    const prices = products
-      .map((p) => (typeof p.price === 'number' ? p.price : 0))
-      .filter((price) => !isNaN(price));
-
-    if (prices.length === 0) {
-      return { minPrice: 0, maxPrice: 10000 };
-    }
+    const prices = products.map((p) => p.price);
+    const calculatedMin = Math.min(...prices);
+    const calculatedMax = Math.max(...prices);
 
     return {
-      minPrice: Math.min(...prices),
-      maxPrice: Math.max(...prices),
+      minPrice: calculatedMin,
+      maxPrice:
+        calculatedMax > calculatedMin ? calculatedMax : calculatedMin + 1000,
     };
   }, [products]);
 
-  // Инициализируем диапазон цен
-  useEffect(() => {
-    if (products.length > 0) {
-      const prices = products
-        .map((p) => (typeof p.price === 'number' ? p.price : 0))
-        .filter((price) => !isNaN(price));
-
-      if (prices.length > 0) {
-        const newMin = Math.min(...prices);
-        const newMax = Math.max(...prices);
-
-        // Если передали начальный диапазон - используем его, иначе вычисляем
-        if (initialPriceRange) {
-          setPriceRange([
-            Math.max(initialPriceRange[0], newMin),
-            Math.min(initialPriceRange[1], newMax),
-          ]);
-        } else {
-          setPriceRange([newMin, newMax]);
-        }
-      }
-    }
-  }, [products, initialPriceRange]);
-
   // Получаем все уникальные категории
-  const allCategories = useMemo(() => {
-    if (!products || products.length === 0) return [];
-
-    // Безопасное извлечение категорий
+  const allCategories = useMemo((): string[] => {
     const categories = products
-      .map((p) => p?.category || '')
-      .filter((category) => category && typeof category === 'string')
-      .map((category) => category.trim());
+      .map((p) => p.category)
+      .filter((category): category is string => {
+        return typeof category === 'string' && category.trim() !== '';
+      });
 
-    return Array.from(new Set(categories))
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
+    const uniqueCategories = Array.from(new Set(categories));
+    return uniqueCategories.sort((a, b) => a.localeCompare(b));
   }, [products]);
 
-  // Функция фильтрации с безопасным доступом к данным
-  const filteredProducts = useMemo(() => {
-    console.log('🔍 Начинаем фильтрацию...', {
-      всего_товаров: products.length,
-      поиск: searchQuery,
-      выбранные_категории: selectedCategories,
-      диапазон_цены: priceRange,
-      сортировка: sortOption,
-    });
+  // Мемоизированные сеттеры
+  const setSearchQuery = useCallback((query: string) => {
+    setFilters((prev) => ({ ...prev, searchQuery: query }));
+  }, []);
 
+  const setSelectedCategories = useCallback((categories: string[]) => {
+    setFilters((prev) => ({ ...prev, selectedCategories: categories }));
+  }, []);
+
+  const setPriceRange = useCallback((range: [number, number]) => {
+    setFilters((prev) => ({ ...prev, priceRange: range }));
+  }, []);
+
+  const setSortOption = useCallback((option: SortOption) => {
+    setFilters((prev) => ({ ...prev, sortOption: option }));
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilters({
+      searchQuery: '',
+      selectedCategories: [],
+      priceRange: [minPrice, maxPrice],
+      sortOption: 'relevance',
+    });
+  }, [minPrice, maxPrice]);
+
+  // Установка фильтров из URL
+  const setFiltersFromUrl = useCallback(
+    (urlFilters: {
+      search?: string;
+      categories?: string[];
+      priceRange?: [number, number];
+      sort?: SortOption;
+    }) => {
+      setFilters((prev) => ({
+        ...prev,
+        searchQuery: urlFilters.search || prev.searchQuery,
+        selectedCategories: urlFilters.categories || prev.selectedCategories,
+        priceRange: urlFilters.priceRange || prev.priceRange,
+        sortOption: urlFilters.sort || prev.sortOption,
+      }));
+    },
+    []
+  );
+
+  // Фильтрация и сортировка продуктов
+  const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // 1. Поиск по названию и категории
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      console.log(`🔎 Ищем: "${query}"`);
-
-      result = result.filter((product) => {
-        const name = String(product?.name || '').toLowerCase();
-        const category = String(product?.category || '').toLowerCase();
-
-        return name.includes(query) || category.includes(query);
-      });
-
-      console.log(`✅ После поиска: ${result.length} товаров`);
+    // Фильтрация по поисковому запросу
+    if (filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase();
+      result = result.filter(
+        (product) =>
+          product.name.toLowerCase().includes(query) ||
+          product.category.toLowerCase().includes(query) ||
+          (product.description &&
+            product.description.toLowerCase().includes(query))
+      );
     }
 
-    // 2. Фильтрация по категориям
-    if (selectedCategories.length > 0) {
-      console.log(`🏷️ Фильтруем по категориям:`, selectedCategories);
-
-      result = result.filter((product) => {
-        const category = String(product?.category || '').trim();
-        return selectedCategories.includes(category);
-      });
-
-      console.log(`✅ После категорий: ${result.length} товаров`);
+    // Фильтрация по категориям
+    if (filters.selectedCategories.length > 0) {
+      result = result.filter((product) =>
+        filters.selectedCategories.includes(product.category)
+      );
     }
 
-    // 3. Фильтрация по цене
-    console.log(
-      `💰 Фильтруем по цене: от ${priceRange[0]} до ${priceRange[1]}`
+    // Фильтрация по цене
+    const [min, max] = filters.priceRange;
+    result = result.filter(
+      (product) => product.price >= min && product.price <= max
     );
 
-    result = result.filter((product) => {
-      const price = Number(product?.price) || 0;
-      const isValidPrice = !isNaN(price);
-      return isValidPrice && price >= priceRange[0] && price <= priceRange[1];
-    });
-
-    console.log(`✅ После цены: ${result.length} товаров`);
-
-    // 4. Сортировка
-    console.log(`📊 Сортируем по: ${sortOption}`);
-
+    // Сортировка
     result.sort((a, b) => {
-      // Безопасные значения для сортировки
-      const aPrice = Number(a?.price) || 0;
-      const bPrice = Number(b?.price) || 0;
-      const aName = String(a?.name || '');
-      const bName = String(b?.name || '');
-
-      switch (sortOption) {
+      switch (filters.sortOption) {
         case 'price-asc':
-          return aPrice - bPrice;
-
+          return a.price - b.price;
         case 'price-desc':
-          return bPrice - aPrice;
-
+          return b.price - a.price;
         case 'name-asc':
-          return aName.localeCompare(bName);
-
+          return a.name.localeCompare(b.name);
         case 'name-desc':
-          return bName.localeCompare(aName) * -1;
-
+          return b.name.localeCompare(a.name);
         case 'relevance':
         default:
-          // Релевантность: сначала товары, соответствующие поиску
-          if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            const aMatch =
-              String(a?.name || '')
-                .toLowerCase()
-                .includes(query) ||
-              String(a?.category || '')
-                .toLowerCase()
-                .includes(query);
-            const bMatch =
-              String(b?.name || '')
-                .toLowerCase()
-                .includes(query) ||
-              String(b?.category || '')
-                .toLowerCase()
-                .includes(query);
-
-            if (aMatch && !bMatch) return -1;
-            if (!aMatch && bMatch) return 1;
-          }
           return 0;
       }
     });
 
-    console.log(`🎉 Финальный результат: ${result.length} товаров`);
-
-    // Логируем первые 3 товара для проверки
-    if (result.length > 0) {
-      console.log(
-        '📦 Примеры товаров:',
-        result.slice(0, 3).map((p) => ({
-          name: p.name,
-          category: p.category,
-          price: p.price,
-          inStock: p.inStock,
-        }))
-      );
-    }
-
     return result;
-  }, [products, searchQuery, selectedCategories, priceRange, sortOption]);
+  }, [products, filters]);
 
-  // Сброс всех фильтров
-  const resetFilters = () => {
-    console.log('🔄 Сбрасываем все фильтры');
-    setSearchQuery('');
-    setSelectedCategories([]);
-    setPriceRange([minPrice, maxPrice]);
-    setSortOption('relevance');
-  };
+  // Проверка наличия активных фильтров
+  const hasActiveFilters = useMemo(() => {
+    return (
+      filters.searchQuery !== '' ||
+      filters.selectedCategories.length > 0 ||
+      filters.priceRange[0] > minPrice ||
+      filters.priceRange[1] < maxPrice ||
+      filters.sortOption !== 'relevance'
+    );
+  }, [filters, minPrice, maxPrice]);
 
-  // Установка фильтров из URL
-  const setFiltersFromUrl = (urlFilters: Partial<UrlFilterState>) => {
-    console.log('🔗 Устанавливаем фильтры из URL:', urlFilters);
+  // Количество активных фильтров
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.searchQuery) count++;
+    if (filters.selectedCategories.length > 0) count++;
+    if (filters.priceRange[0] > minPrice || filters.priceRange[1] < maxPrice)
+      count++;
+    if (filters.sortOption !== 'relevance') count++;
+    return count;
+  }, [filters, minPrice, maxPrice]);
 
-    if (urlFilters.search !== undefined) {
-      setSearchQuery(urlFilters.search);
-    }
-
-    if (urlFilters.categories !== undefined) {
-      setSelectedCategories(urlFilters.categories);
-    }
-
-    if (urlFilters.priceRange !== undefined) {
-      setPriceRange(urlFilters.priceRange);
-    }
-
-    if (urlFilters.sort !== undefined) {
-      setSortOption(urlFilters.sort);
-    }
-  };
-
-  // Получение текущего состояния фильтров для URL
-  const getUrlFilterState = (): UrlFilterState => {
+  // Состояние для URL
+  const urlFilterState = useMemo((): UrlFilterState => {
     return {
-      search: searchQuery,
-      categories: selectedCategories,
-      priceRange,
-      sort: sortOption,
+      search: filters.searchQuery,
+      categories: filters.selectedCategories,
+      minPrice: filters.priceRange[0],
+      maxPrice: filters.priceRange[1],
+      sort: filters.sortOption,
     };
-  };
-
-  // Логируем изменения фильтров
-  useEffect(() => {
-    console.log('🔄 Фильтры обновлены:', {
-      searchQuery,
-      selectedCategories,
-      priceRange,
-      sortOption,
-      minPrice,
-      maxPrice,
-      allCategories: allCategories.length,
-      filteredProducts: filteredProducts.length,
-    });
-  }, [
-    searchQuery,
-    selectedCategories,
-    priceRange,
-    sortOption,
-    minPrice,
-    maxPrice,
-    allCategories.length,
-    filteredProducts.length,
-  ]);
+  }, [filters]);
 
   return {
-    // Состояния
-    searchQuery,
-    selectedCategories,
-    priceRange,
-    sortOption,
+    // Текущие значения фильтров
+    searchQuery: filters.searchQuery,
+    selectedCategories: filters.selectedCategories,
+    priceRange: filters.priceRange,
+    sortOption: filters.sortOption,
+
+    // Вычисленные значения
     minPrice,
     maxPrice,
     allCategories,
     filteredProducts,
 
-    // Текущее состояние для URL
-    urlFilterState: getUrlFilterState(),
+    // Статистика
+    hasActiveFilters,
+    activeFiltersCount,
+    urlFilterState,
 
     // Сеттеры
     setSearchQuery,
     setSelectedCategories,
     setPriceRange,
     setSortOption,
-
-    // Действия
     resetFilters,
     setFiltersFromUrl,
-
-    // Дополнительные утилиты
-    hasActiveFilters:
-      searchQuery.trim() !== '' ||
-      selectedCategories.length > 0 ||
-      priceRange[0] !== minPrice ||
-      priceRange[1] !== maxPrice ||
-      sortOption !== 'relevance',
-
-    activeFiltersCount:
-      (searchQuery.trim() !== '' ? 1 : 0) +
-      (selectedCategories.length > 0 ? 1 : 0) +
-      (priceRange[0] !== minPrice || priceRange[1] !== maxPrice ? 1 : 0) +
-      (sortOption !== 'relevance' ? 1 : 0),
   };
 };

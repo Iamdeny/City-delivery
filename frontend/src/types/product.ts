@@ -4,9 +4,11 @@ export interface Product {
   price: number;
   category: string;
   image: string;
+  description?: string;
   inStock?: boolean;
-  description?: string; // Добавьте опциональное поле
+  rating?: number;
 }
+
 // Проверьте, есть ли CartItem в этом файле
 export interface CartItem extends Product {
   quantity: number;
