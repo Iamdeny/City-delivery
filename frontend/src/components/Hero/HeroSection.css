@@ -1,0 +1,306 @@
+/**
+ * Hero Section Styles
+ * Design inspired by: Getir (address bar), Gorillas (promo), Yandex (stats)
+ */
+
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* ===== ADDRESS BAR (от Getir - всегда сверху) ===== */
+.hero-address-bar {
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.hero-address-bar:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.hero-address-bar:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.hero-address-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.hero-address-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary-50);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary-600);
+  flex-shrink: 0;
+}
+
+.hero-address-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-address-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.hero-address-value {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-address-arrow {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+/* ===== DELIVERY PROMISE (от Getir - четкий USP) ===== */
+.hero-promise {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  color: white;
+  box-shadow: var(--shadow-lg);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.hero-promise-icon {
+  font-size: var(--font-size-3xl);
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.hero-promise-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-promise-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.hero-promise-subtitle {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+  margin-top: var(--spacing-xs);
+}
+
+/* ===== PROMO BANNER (от Gorillas - визуальный акцент) ===== */
+.hero-promo {
+  position: relative;
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-2xl);
+  color: white;
+  overflow: hidden;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: var(--shadow-xl);
+  transition: transform var(--transition-base);
+}
+
+.hero-promo:hover {
+  transform: scale(1.02);
+}
+
+/* Gradient overlay для глубины */
+.hero-promo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+
+.hero-promo-content {
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.5s ease-out;
+}
+
+.hero-promo-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.hero-promo-subtitle {
+  font-size: var(--font-size-base);
+  margin-top: var(--spacing-sm);
+  opacity: 0.95;
+}
+
+/* Dots indicator */
+.hero-promo-dots {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.hero-promo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.hero-promo-dot.active {
+  background: white;
+  width: 24px;
+}
+
+.hero-promo-dot:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== STATS (от Yandex Lavka - доверие) ===== */
+.hero-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: white;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hero-stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-600);
+  line-height: var(--line-height-tight);
+}
+
+.hero-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.hero-stat-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--color-divider);
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Tablet */
+@media (min-width: 768px) {
+  .hero-section {
+    gap: var(--spacing-lg);
+  }
+
+  .hero-promo {
+    min-height: 200px;
+    padding: var(--spacing-2xl);
+  }
+
+  .hero-promo-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  .hero-promise-title {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .hero-section {
+    gap: var(--spacing-xl);
+  }
+
+  .hero-address-bar {
+    padding: var(--spacing-lg);
+  }
+
+  .hero-promo {
+    min-height: 240px;
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: var(--shadow-lg);
+  }
+  50% {
+    box-shadow: var(--shadow-xl), 0 0 0 4px rgba(99, 102, 241, 0.1);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Dark mode */
+[data-theme='dark'] .hero-address-bar,
+[data-theme='dark'] .hero-stats {
+  background: var(--color-surface);
+}
+
+[data-theme='dark'] .hero-address-icon {
+  background: var(--color-primary-900);
+}
+

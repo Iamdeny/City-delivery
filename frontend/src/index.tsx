@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import './styles/design-system.css'; // Design System
 
 // Убедитесь, что элемент существует
 const container = document.getElementById('root');
@@ -14,14 +16,18 @@ if (!container) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </React.StrictMode>
   );
 } else {
   const root = ReactDOM.createRoot(container);
   root.render(
     <React.StrictMode>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }

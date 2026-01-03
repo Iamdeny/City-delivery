@@ -1,0 +1,225 @@
+/**
+ * Стили модального окна корзины
+ */
+
+.cart-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100; /* Выше BottomNav (1000) */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.cart-modal {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  width: 100%;
+  max-width: 600px;
+  height: calc(100vh - env(safe-area-inset-top, 0px));
+  max-height: calc(100vh - env(safe-area-inset-top, 0px));
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2), 0 0 40px rgba(139, 92, 246, 0.1);
+  border-top: 1px solid var(--glass-border);
+  overflow: hidden;
+  position: relative;
+  z-index: 1101;
+}
+
+.cart-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  z-index: 10;
+  border-radius: 24px 24px 0 0;
+  min-height: 56px;
+}
+
+.cart-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-header-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.cart-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cart-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-cart-btn {
+  padding: 8px 16px;
+  background: #EF4444;
+  color: var(--text-on-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-cart-btn:hover {
+  background: #DC2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.close-cart-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-cart-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+.cart-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.empty-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 24px;
+}
+
+.empty-cart-content {
+  text-align: center;
+}
+
+.empty-cart-icon {
+  font-size: 80px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-cart-content p {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-cart-content small {
+  font-size: 14px;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 24px;
+}
+
+.restore-cart-button {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.restore-cart-button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Десктопная версия */
+@media (min-width: 1024px) {
+  .cart-modal-overlay {
+    align-items: center;
+  }
+
+  .cart-modal {
+    max-width: 500px;
+    height: 85vh;
+    max-height: 85vh;
+    border-radius: var(--radius-lg);
+    animation: scaleIn 0.3s ease;
+  }
+
+  .cart-modal-header {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+

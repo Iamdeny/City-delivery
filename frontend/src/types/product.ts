@@ -9,7 +9,3 @@ export interface Product {
   rating?: number;
 }
 
-// Проверьте, есть ли CartItem в этом файле
-export interface CartItem extends Product {
-  quantity: number;
-}

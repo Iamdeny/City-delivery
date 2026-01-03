@@ -1,33 +1,35 @@
-export class StorageService {
-  private static PREFIX = 'delivery_app_';
-  private static CART_KEY = 'cart';
+import { logger } from './logger';
+import { STORAGE_KEYS } from '../config/constants';
+import type { CartItem } from '../types/cart';
 
-  static getCart(): any[] {
+export class StorageService {
+  private static getCartKey(): string {
+    return STORAGE_KEYS.CART;
+  }
+
+  static getCart(): CartItem[] {
     try {
-      const data = localStorage.getItem(`${this.PREFIX}${this.CART_KEY}`);
+      const data = localStorage.getItem(this.getCartKey());
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('Ошибка чтения корзины из localStorage:', error);
+      logger.error('Ошибка чтения корзины из localStorage:', error);
       return [];
     }
   }
 
-  static saveCart(cart: any[]): void {
+  static saveCart(cart: CartItem[]): void {
     try {
-      localStorage.setItem(
-        `${this.PREFIX}${this.CART_KEY}`,
-        JSON.stringify(cart)
-      );
+      localStorage.setItem(this.getCartKey(), JSON.stringify(cart));
     } catch (error) {
-      console.error('Ошибка сохранения корзины в localStorage:', error);
+      logger.error('Ошибка сохранения корзины в localStorage:', error);
     }
   }
 
   static clearCart(): void {
     try {
-      localStorage.removeItem(`${this.PREFIX}${this.CART_KEY}`);
+      localStorage.removeItem(this.getCartKey());
     } catch (error) {
-      console.error('Ошибка очистки корзины в localStorage:', error);
+      logger.error('Ошибка очистки корзины в localStorage:', error);
     }
   }
 

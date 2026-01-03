@@ -1,0 +1,92 @@
+/**
+ * Стили для переключателя темы
+ * Современный дизайн с glassmorphism
+ */
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow);
+}
+
+.theme-toggle:hover {
+  background: var(--surface-light);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow);
+}
+
+.theme-toggle__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle:hover .theme-toggle__icon {
+  transform: rotate(15deg) scale(1.1);
+}
+
+.theme-toggle__label {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Темная тема */
+.theme-toggle--dark {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-on-primary);
+}
+
+.theme-toggle--dark:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Мобильная версия */
+@media (max-width: 767px) {
+  .theme-toggle__label {
+    display: none;
+  }
+
+  .theme-toggle {
+    padding: 10px;
+    min-width: 40px;
+    justify-content: center;
+  }
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.theme-toggle {
+  animation: fadeIn 0.3s ease-out;
+}
+

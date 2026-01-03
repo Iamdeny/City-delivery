@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { SortOption } from './useProductFilters';
+import { logger } from '../utils/logger';
 
 interface UrlFilters {
   search: string;
@@ -10,19 +11,36 @@ interface UrlFilters {
 }
 
 interface UseUrlFiltersProps {
-  initialFilters: Omit<UrlFilters, 'minPrice' | 'maxPrice'> & {
-    priceRange: [number, number];
-  };
+  initialMinPrice: number;
+  initialMaxPrice: number;
   onFiltersChange: (filters: UrlFilters) => void;
 }
 
 export const useUrlFilters = ({
-  initialFilters,
+  initialMinPrice,
+  initialMaxPrice,
   onFiltersChange,
 }: UseUrlFiltersProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
+  const onFiltersChangeRef = useRef(onFiltersChange);
+  
+  // Используем ref для стабильных значений начальных цен
+  const initialMinPriceRef = useRef(initialMinPrice);
+  const initialMaxPriceRef = useRef(initialMaxPrice);
+
+  // Обновляем ref при изменении callback
+  useEffect(() => {
+    onFiltersChangeRef.current = onFiltersChange;
+  }, [onFiltersChange]);
+  
+  // Обновляем ref для начальных цен (но не пересоздаём функции!)
+  useEffect(() => {
+    initialMinPriceRef.current = initialMinPrice;
+    initialMaxPriceRef.current = initialMaxPrice;
+  }, [initialMinPrice, initialMaxPrice]);
 
   // Функция для преобразования фильтров в URL параметры
+  // НЕ зависит от initialFilters - использует ref!
   const filtersToUrlParams = useCallback(
     (filters: UrlFilters) => {
       const params = new URLSearchParams();
@@ -35,11 +53,12 @@ export const useUrlFilters = ({
         params.set('categories', filters.categories.join(','));
       }
 
-      if (filters.minPrice > initialFilters.priceRange[0]) {
+      // Используем ref для начальных цен
+      if (filters.minPrice > initialMinPriceRef.current) {
         params.set('min_price', filters.minPrice.toString());
       }
 
-      if (filters.maxPrice < initialFilters.priceRange[1]) {
+      if (filters.maxPrice < initialMaxPriceRef.current) {
         params.set('max_price', filters.maxPrice.toString());
       }
 
@@ -49,10 +68,11 @@ export const useUrlFilters = ({
 
       return params.toString();
     },
-    [initialFilters.priceRange]
+    [] // ← Пустой массив! Используем ref!
   );
 
   // Функция для парсинга URL параметров в фильтры
+  // НЕ зависит от initialFilters - использует ref!
   const urlParamsToFilters = useCallback(
     (searchParams: URLSearchParams): UrlFilters => {
       const search = searchParams.get('search') || '';
@@ -61,16 +81,16 @@ export const useUrlFilters = ({
         ? categoriesParam.split(',').filter(Boolean)
         : [];
       const minPrice =
-        Number(searchParams.get('min_price')) || initialFilters.priceRange[0];
+        Number(searchParams.get('min_price')) || initialMinPriceRef.current;
       const maxPrice =
-        Number(searchParams.get('max_price')) || initialFilters.priceRange[1];
+        Number(searchParams.get('max_price')) || initialMaxPriceRef.current;
       const sort = (searchParams.get('sort') as SortOption) || 'relevance';
 
       return {
         search,
         categories,
-        minPrice: Math.max(minPrice, initialFilters.priceRange[0]),
-        maxPrice: Math.min(maxPrice, initialFilters.priceRange[1]),
+        minPrice: Math.max(minPrice, initialMinPriceRef.current),
+        maxPrice: Math.min(maxPrice, initialMaxPriceRef.current),
         sort: [
           'relevance',
           'price-asc',
@@ -82,7 +102,7 @@ export const useUrlFilters = ({
           : 'relevance',
       };
     },
-    [initialFilters.priceRange]
+    [] // ← Пустой массив! Используем ref!
   );
 
   // Обновляем URL при изменении фильтров
@@ -96,7 +116,7 @@ export const useUrlFilters = ({
       // Используем replaceState чтобы не создавать новую запись в истории для каждого изменения
       window.history.replaceState({}, '', newUrl);
 
-      console.log('🔗 URL обновлен:', newUrl);
+      logger.log('🔗 URL обновлен:', newUrl);
     },
     [filtersToUrlParams]
   );
@@ -108,16 +128,16 @@ export const useUrlFilters = ({
     const searchParams = new URLSearchParams(window.location.search);
 
     if (searchParams.toString()) {
-      console.log('🔗 Восстанавливаем фильтры из URL:', window.location.search);
+      logger.log('🔗 Восстанавливаем фильтры из URL:', window.location.search);
 
       const urlFilters = urlParamsToFilters(searchParams);
 
       // Применяем фильтры из URL
-      onFiltersChange(urlFilters);
+      onFiltersChangeRef.current(urlFilters);
     }
 
     setIsInitialized(true);
-  }, [isInitialized, onFiltersChange, urlParamsToFilters]);
+  }, [isInitialized, urlParamsToFilters]);
 
   // Синхронизируем URL при изменении фильтров
   const syncUrlWithFilters = useCallback(
@@ -132,7 +152,7 @@ export const useUrlFilters = ({
   // Функция для сброса URL (удаления всех параметров)
   const resetUrl = useCallback(() => {
     window.history.replaceState({}, '', window.location.pathname);
-    console.log('🔗 URL сброшен');
+    logger.log('🔗 URL сброшен');
   }, []);
 
   // Функция для создания shareable URL
@@ -146,10 +166,11 @@ export const useUrlFilters = ({
     [filtersToUrlParams]
   );
 
-  return {
+  // Мемоизируем возвращаемый объект
+  return useMemo(() => ({
     syncUrlWithFilters,
     resetUrl,
     getShareableUrl,
     isInitialized,
-  };
+  }), [syncUrlWithFilters, resetUrl, getShareableUrl, isInitialized]);
 };
