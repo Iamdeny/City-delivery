@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 
 export type NotificationType = 'success' | 'error' | 'info';
 
@@ -54,10 +54,11 @@ export const useNotifications = () => {
     return () => clearInterval(interval);
   }, []);
 
-  return {
+  // Мемоизируем возвращаемый объект
+  return useMemo(() => ({
     notifications,
     showNotification,
     removeNotification,
     clearAllNotifications,
-  };
+  }), [notifications, showNotification, removeNotification, clearAllNotifications]);
 };

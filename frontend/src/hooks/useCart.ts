@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CartItem } from '../types/cart';
 import { Product } from '../types/product';
+import { StorageService } from '../utils/storage';
+import { TIMEOUTS } from '../config/constants';
 
 export const useCart = () => {
   const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('cart');
-    return saved ? JSON.parse(saved) : [];
+    return StorageService.getCart();
   });
 
   // Мемоизируем вычисляемые значения
@@ -53,6 +54,26 @@ export const useCart = () => {
     setItems((prev) => prev.filter((item) => item.id !== productId));
   }, []);
 
+  const decrementQuantity = useCallback((product: Product) => {
+    setItems((prev) => {
+      const existingItem = prev.find((item) => item.id === product.id);
+      
+      if (!existingItem) {
+        return prev;
+      }
+
+      if (existingItem.quantity <= 1) {
+        return prev.filter((item) => item.id !== product.id);
+      }
+
+      return prev.map((item) =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
+    });
+  }, []);
+
   const updateQuantity = useCallback(
     (productId: number, quantity: number) => {
       if (quantity < 1) {
@@ -74,15 +95,10 @@ export const useCart = () => {
   }, []);
 
   const restoreCart = useCallback(() => {
-    const saved = localStorage.getItem('cart');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setItems(parsed);
-        return true;
-      } catch {
-        return false;
-      }
+    const saved = StorageService.getCart();
+    if (saved.length > 0) {
+      setItems(saved);
+      return true;
     }
     return false;
   }, []);
@@ -91,24 +107,37 @@ export const useCart = () => {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (items.length > 0) {
-        localStorage.setItem('cart', JSON.stringify(items));
+        StorageService.saveCart(items);
       } else {
-        localStorage.removeItem('cart');
+        StorageService.clearCart();
       }
-    }, 300);
+    }, TIMEOUTS.CART_SAVE);
 
     return () => clearTimeout(timeoutId);
   }, [items]);
 
-  return {
+  // Мемоизируем возвращаемый объект
+  return useMemo(() => ({
     cart: items,
     totalAmount,
     totalItems,
     hasItems,
     addToCart,
     removeFromCart,
+    decrementQuantity,
     updateQuantity,
     clearCart,
     restoreCart,
-  };
+  }), [
+    items,
+    totalAmount,
+    totalItems,
+    hasItems,
+    addToCart,
+    removeFromCart,
+    decrementQuantity,
+    updateQuantity,
+    clearCart,
+    restoreCart,
+  ]);
 };

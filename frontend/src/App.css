@@ -1,21 +1,130 @@
 /* ===== MOBILE-FIRST СТИЛИ ===== */
 /* Базовые стили для мобильных (0-767px) */
 
-:root {
-  --primary: #007aff;
-  --primary-dark: #0056cc;
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
-  --background: #ffffff;
-  --surface: #f8f9fa;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --border: #e5e7eb;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
-  --radius: 12px;
-  --radius-sm: 8px;
+/* ===== СВЕТЛАЯ ТЕМА (по умолчанию) ===== */
+:root,
+[data-theme='light'] {
+  /* 🎨 СОВРЕМЕННАЯ ЦВЕТОВАЯ ПАЛИТРА 2025 */
+  /* Градиентный акцент: фиолетово-розовый (тренд 2025) */
+  --primary: #8B5CF6; /* Фиолетовый */
+  --primary-gradient: linear-gradient(135deg, #8B5CF6 0%, #EC4899 50%, #F97316 100%);
+  --primary-dark: #7C3AED;
+  --primary-light: #A78BFA;
+  --primary-hover: #7C3AED;
+  
+  /* Альтернативный яркий градиент */
+  --accent-gradient: linear-gradient(135deg, #F97316 0%, #EC4899 50%, #8B5CF6 100%);
+  --accent-glow: 0 0 20px rgba(139, 92, 246, 0.4);
+  
+  --success: #10B981;
+  --error: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+  
+  /* Фоны с градиентами */
+  --background: #FFFFFF;
+  --background-gradient: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%);
+  --surface: #F8F9FA;
+  --surface-light: #FFFFFF;
+  --surface-glass: rgba(255, 255, 255, 0.7);
+  
+  /* Текст */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-disabled: #CBD5E1;
+  --text-on-primary: #FFFFFF;
+  
+  /* Границы и тени (более мягкие) */
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 30px rgba(139, 92, 246, 0.3);
+  
+  /* Скругления (более плавные) */
+  --radius: 20px;
+  --radius-sm: 12px;
+  --radius-lg: 28px;
+  --radius-xl: 32px;
+  
+  /* Отступы */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-blur: blur(10px);
+}
+
+/* ===== ТЕМНАЯ ТЕМА (Мягкий графит 2026) ===== */
+[data-theme='dark'] {
+  /* Мягкий графит вместо pure black - более комфортно для глаз */
+  --background: #1A1A1A;
+  --background-gradient: linear-gradient(180deg, #1A1A1A 0%, #252525 100%);
+  --surface: #2D2D2D;
+  --surface-light: #3A3A3A;
+  --surface-glass: rgba(45, 45, 45, 0.85);
+  
+  /* Текст с лучшей контрастностью */
+  --text-primary: #F5F5F5;
+  --text-secondary: #B0B0B0;
+  --text-disabled: #5A5A5A;
+  --text-on-primary: #FFFFFF;
+  
+  /* Акценты (чуть ярче для контраста) */
+  --primary: #A78BFA; /* Светлее для dark mode */
+  --primary-gradient: linear-gradient(135deg, #A78BFA 0%, #F472B6 50%, #FB923C 100%);
+  --primary-dark: #8B5CF6;
+  --primary-light: #C4B5FD;
+  --primary-hover: #A78BFA;
+  
+  --accent-gradient: linear-gradient(135deg, #FB923C 0%, #F472B6 50%, #A78BFA 100%);
+  --accent-glow: 0 0 30px rgba(167, 139, 250, 0.5);
+  
+  --success: #34D399;
+  --error: #F87171;
+  --warning: #FBBF24;
+  --info: #60A5FA;
+  
+  /* Границы и тени */
+  --border: #2C2C2E;
+  --border-light: #3C3C3E;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 40px rgba(167, 139, 250, 0.4);
+  
+  /* Glassmorphism для dark mode */
+  --glass-bg: rgba(28, 28, 30, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(20px);
+}
+
+/* Плавный переход между темами (iOS-style) */
+* {
+  transition: 
+    background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ускоренные переходы для интерактивных элементов */
+button,
+a,
+input,
+select,
+textarea {
+  transition: 
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -25,14 +134,38 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--text-primary);
-  background: var(--background);
+  background: var(--background-gradient);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Декоративный градиентный фон */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: gradientShift 20s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-10%, -10%) scale(1.1);
+  }
 }
 
 /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
@@ -40,7 +173,9 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 /* ===== ШАПКА ===== */
@@ -251,6 +386,13 @@ body {
   width: 100%;
 }
 
+/* Отступ снизу на мобильных для плавающей кнопки корзины и нижней навигации */
+@media (max-width: 1023px) {
+  .main-container {
+    padding-bottom: 20px;
+  }
+}
+
 .products-wrapper {
   display: flex;
   flex-direction: column;
@@ -262,6 +404,23 @@ body {
   .products-wrapper {
     flex-direction: row;
     gap: 24px;
+    align-items: flex-start;
+  }
+}
+
+/* ===== ЛЕВАЯ ПАНЕЛЬ - КАТЕГОРИИ (в стиле Самоката) ===== */
+.category-nav-sidebar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .category-nav-sidebar {
+    display: block;
+    width: 240px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 80px;
+    align-self: flex-start;
   }
 }
 
@@ -501,8 +660,13 @@ body {
 /* ===== СЕТКА ТОВАРОВ ===== */
 .product-grid-container {
   flex: 1;
-  width: 100%;
+  min-width: 0;
+  background: white;
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
+
 
 .products-section {
   background: white;

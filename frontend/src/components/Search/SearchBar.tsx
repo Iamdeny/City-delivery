@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './SearchBar.css';
 
 interface SearchBarProps {
@@ -19,14 +19,34 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Дебаунс поиска
+  // Дебаунс поиска (используем useRef для стабильности onSearch)
+  const onSearchRef = useRef(onSearch);
+  const prevQueryRef = useRef(query);
+  
   useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  useEffect(() => {
+    // Пропускаем вызов, если значение не изменилось
+    if (query === prevQueryRef.current) {
+      return;
+    }
+    
     const timer = setTimeout(() => {
-      onSearch(query);
+      // Обновляем ref только после вызова, чтобы избежать повторных вызовов
+      prevQueryRef.current = query;
+      onSearchRef.current(query);
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [query, delay, onSearch]);
+  }, [query, delay]);
+
+  // Мемоизируем строковое представление suggestions для стабильности
+  const suggestionsKey = useMemo(
+    () => suggestions.join(','),
+    [suggestions] // ← Зависимость от массива, но сравниваем по содержимому
+  );
 
   // Фильтрация предложений
   useEffect(() => {
@@ -42,7 +62,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       setFilteredSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [query, suggestions]);
+  }, [query, suggestionsKey]); // ← Используем строковое представление вместо массива!
 
   // Закрытие предложений при клике вне
   useEffect(() => {
@@ -73,7 +93,20 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <div className='search-bar' ref={searchRef}>
       <div className='search-input-wrapper'>
-        <div className='search-icon'>🔍</div>
+        <div className='search-icon'>
+          <svg
+            width='20'
+            height='20'
+            viewBox='0 0 24 24'
+            fill='none'
+            xmlns='http://www.w3.org/2000/svg'
+          >
+            <path
+              d='M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z'
+              fill='currentColor'
+            />
+          </svg>
+        </div>
         <input
           type='text'
           value={query}
@@ -89,7 +122,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             className='clear-search-btn'
             aria-label='Очистить поиск'
           >
-            ✕
+            <svg
+              width='18'
+              height='18'
+              viewBox='0 0 24 24'
+              fill='none'
+              xmlns='http://www.w3.org/2000/svg'
+            >
+              <path
+                d='M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z'
+                fill='currentColor'
+              />
+            </svg>
           </button>
         )}
       </div>
