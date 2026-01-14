@@ -38,6 +38,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
   const [comment, setComment] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [showSberSpasibo, setShowSberSpasibo] = useState(true);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,25 +61,78 @@ const OrderForm: React.FC<OrderFormProps> = ({
     }
 
     setIsSubmitting(true);
+    setLocationError(null);
 
     try {
       let latitude: number | undefined;
       let longitude: number | undefined;
 
-      if (navigator.geolocation) {
+      // Используем сохраненные координаты, если они есть
+      if (coordinates) {
+        latitude = coordinates.lat;
+        longitude = coordinates.lng;
+        logger.log('📍 Используем сохраненные координаты:', { latitude, longitude });
+      } else if (navigator.geolocation) {
+        setIsGettingLocation(true);
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 5000,
-              maximumAge: 60000,
-            });
+            // Увеличиваем таймаут и улучшаем опции
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              (error) => {
+                // Обрабатываем разные типы ошибок
+                let errorMessage = 'Не удалось получить геолокацию';
+                
+                switch (error.code) {
+                  case error.PERMISSION_DENIED:
+                    errorMessage = 'Доступ к геолокации запрещен. Разрешите доступ в настройках браузера.';
+                    break;
+                  case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Геолокация недоступна. Проверьте настройки устройства.';
+                    break;
+                  case error.TIMEOUT:
+                    errorMessage = 'Превышено время ожидания геолокации. Попробуйте еще раз.';
+                    break;
+                  default:
+                    errorMessage = `Ошибка геолокации: ${error.message || 'Неизвестная ошибка'}`;
+                }
+                
+                reject(new Error(errorMessage));
+              },
+              {
+                timeout: 15000, // Увеличиваем до 15 секунд
+                maximumAge: 300000, // 5 минут - используем кэш
+                enableHighAccuracy: true, // Высокая точность
+              }
+            );
           });
+          
           latitude = position.coords.latitude;
           longitude = position.coords.longitude;
-          logger.log('📍 Геолокация получена:', { latitude, longitude });
-        } catch (geoError) {
+          
+          // Сохраняем координаты для повторного использования
+          setCoordinates({ lat: latitude, lng: longitude });
+          
+          logger.log('📍 Геолокация получена:', { 
+            latitude, 
+            longitude,
+            accuracy: position.coords.accuracy 
+          });
+        } catch (geoError: any) {
+          const errorMessage = geoError?.message || 'Не удалось получить геолокацию';
           logger.warn('⚠️ Не удалось получить геолокацию:', geoError);
+          setLocationError(errorMessage);
+          // Не блокируем оформление заказа, просто показываем предупреждение
+          onShowNotification(
+            `${errorMessage}. Заказ будет оформлен без точных координат.`,
+            'info'
+          );
+        } finally {
+          setIsGettingLocation(false);
         }
+      } else {
+        logger.warn('⚠️ Геолокация не поддерживается браузером');
+        setLocationError('Геолокация не поддерживается вашим браузером');
       }
 
       const orderData = {
@@ -175,13 +231,90 @@ const OrderForm: React.FC<OrderFormProps> = ({
 
         <div className='order-section clickable' onClick={() => {
           const newAddress = prompt('Введите адрес доставки:', address);
-          if (newAddress) setAddress(newAddress);
+          if (newAddress) {
+            setAddress(newAddress);
+            // Сбрасываем координаты при изменении адреса
+            setCoordinates(null);
+            setLocationError(null);
+          }
         }}>
           <div className='order-section-content'>
             <span className='order-section-label'>{address}</span>
             <span className='order-section-arrow'>›</span>
           </div>
         </div>
+
+        {/* Кнопка получения геолокации */}
+        {navigator.geolocation && (
+          <div className='order-section clickable' onClick={async () => {
+            setIsGettingLocation(true);
+            setLocationError(null);
+            
+            try {
+              const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                  resolve,
+                  (error) => {
+                    let errorMessage = 'Не удалось получить геолокацию';
+                    
+                    switch (error.code) {
+                      case error.PERMISSION_DENIED:
+                        errorMessage = 'Доступ к геолокации запрещен. Разрешите доступ в настройках браузера.';
+                        break;
+                      case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Геолокация недоступна. Проверьте настройки устройства.';
+                        break;
+                      case error.TIMEOUT:
+                        errorMessage = 'Превышено время ожидания. Попробуйте еще раз.';
+                        break;
+                      default:
+                        errorMessage = `Ошибка: ${error.message || 'Неизвестная ошибка'}`;
+                    }
+                    
+                    reject(new Error(errorMessage));
+                  },
+                  {
+                    timeout: 15000,
+                    maximumAge: 0, // Всегда получаем свежие данные
+                    enableHighAccuracy: true,
+                  }
+                );
+              });
+              
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              
+              setCoordinates({ lat, lng });
+              onShowNotification(
+                `📍 Геолокация получена! Точность: ${Math.round(position.coords.accuracy)}м`,
+                'success'
+              );
+            } catch (error: any) {
+              const errorMessage = error?.message || 'Не удалось получить геолокацию';
+              setLocationError(errorMessage);
+              onShowNotification(errorMessage, 'error');
+            } finally {
+              setIsGettingLocation(false);
+            }
+          }}>
+            <div className='order-section-content'>
+              <span className='order-section-label'>
+                {isGettingLocation 
+                  ? '📍 Получаем геолокацию...' 
+                  : coordinates 
+                    ? `📍 Геолокация: ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
+                    : '📍 Получить мою геолокацию'
+                }
+              </span>
+              {locationError && (
+                <span className='order-section-error' style={{ fontSize: '12px', color: '#ff4444' }}>
+                  {locationError}
+                </span>
+              )}
+              {!isGettingLocation && <span className='order-section-arrow'>›</span>}
+            </div>
+          </div>
+        )}
 
         <div className='order-section clickable' onClick={() => {
           const method = paymentMethod === 'card' ? 'cash' : 'card';
@@ -205,9 +338,14 @@ const OrderForm: React.FC<OrderFormProps> = ({
           <button
             type='submit'
             className='continue-btn-modern'
-            disabled={isSubmitting || cart.length === 0}
+            disabled={isSubmitting || cart.length === 0 || isGettingLocation}
           >
-            {isSubmitting ? 'Оформляем...' : 'Продолжить'}
+            {isGettingLocation 
+              ? '📍 Получаем геолокацию...' 
+              : isSubmitting 
+                ? 'Оформляем...' 
+                : 'Продолжить'
+            }
           </button>
         </form>
       </div>
