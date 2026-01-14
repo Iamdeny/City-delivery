@@ -6,17 +6,17 @@
 :root {
   /* ===== COLOR PALETTE ===== */
   
-  /* Primary - Modern Indigo (не как у конкурентов) */
-  --color-primary-50: #EEF2FF;
-  --color-primary-100: #E0E7FF;
-  --color-primary-200: #C7D2FE;
-  --color-primary-300: #A5B4FC;
-  --color-primary-400: #818CF8;
-  --color-primary-500: #6366F1;  /* Main */
-  --color-primary-600: #4F46E5;
-  --color-primary-700: #4338CA;
-  --color-primary-800: #3730A3;
-  --color-primary-900: #312E81;
+  /* Primary - Самокат Pink (#EE386E) */
+  --color-primary-50: #FDF2F8;
+  --color-primary-100: #FCE7F3;
+  --color-primary-200: #FBCFE8;
+  --color-primary-300: #F9A8D4;
+  --color-primary-400: #F472B6;
+  --color-primary-500: #EE386E;  /* Main - Самокат Pink */
+  --color-primary-600: #DB2777;
+  --color-primary-700: #BE185D;
+  --color-primary-800: #9F1239;
+  --color-primary-900: #831843;
 
   /* Secondary - Amber (для акцентов) */
   --color-secondary-50: #FFFBEB;
@@ -71,9 +71,9 @@
 
   /* ===== TYPOGRAPHY ===== */
   
-  /* Font Family */
-  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-                      'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  /* Font Family - Системные шрифты (Самокат стиль) */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 
+                      'Roboto', 'SF Pro Display', 'Helvetica Neue', sans-serif;
   
   /* Font Sizes (rem based, 16px = 1rem) */
   --font-size-xs: 0.75rem;    /* 12px */
@@ -98,21 +98,21 @@
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 
-  /* ===== SPACING (8px grid) ===== */
-  --spacing-xs: 0.25rem;   /* 4px */
-  --spacing-sm: 0.5rem;    /* 8px */
+  /* ===== SPACING (Самокат - "воздушные" отступы) ===== */
+  --spacing-xs: 0.5rem;    /* 8px */
+  --spacing-sm: 0.75rem;   /* 12px */
   --spacing-md: 1rem;      /* 16px */
-  --spacing-lg: 1.5rem;    /* 24px */
-  --spacing-xl: 2rem;      /* 32px */
-  --spacing-2xl: 3rem;     /* 48px */
-  --spacing-3xl: 4rem;     /* 64px */
-  --spacing-4xl: 6rem;     /* 96px */
+  --spacing-lg: 1.5rem;    /* 24px - минимум между блоками */
+  --spacing-xl: 2rem;      /* 32px - внутренние отступы фреймов */
+  --spacing-2xl: 2.5rem;   /* 40px */
+  --spacing-3xl: 3rem;     /* 48px */
+  --spacing-4xl: 4rem;     /* 64px */
 
-  /* ===== BORDER RADIUS ===== */
-  --radius-sm: 0.25rem;    /* 4px */
-  --radius-md: 0.5rem;     /* 8px */
-  --radius-lg: 0.75rem;    /* 12px */
-  --radius-xl: 1rem;       /* 16px */
+  /* ===== BORDER RADIUS (Самокат стиль) ===== */
+  --radius-sm: 0.5rem;     /* 8px */
+  --radius-md: 0.75rem;    /* 12px */
+  --radius-lg: 1rem;       /* 16px - для карточек и кнопок */
+  --radius-xl: 1.5rem;     /* 24px - для модальных окон */
   --radius-2xl: 1.5rem;    /* 24px */
   --radius-full: 9999px;   /* Circular */
 
@@ -136,10 +136,10 @@
   --z-tooltip: 1070;
   --z-notification: 1080;
 
-  /* ===== TRANSITIONS ===== */
+  /* ===== TRANSITIONS (Самокат - плавные транзакции) ===== */
   --transition-fast: 150ms ease-in-out;
-  --transition-base: 200ms ease-in-out;
-  --transition-slow: 300ms ease-in-out;
+  --transition-base: 300ms ease-in-out;  /* Основной для всех элементов */
+  --transition-slow: 400ms ease-in-out;
   --transition-slower: 500ms ease-in-out;
 
   /* Easing functions */
@@ -240,7 +240,7 @@
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.98);  /* Самокат стиль - легкое уменьшение */
 }
 
 .btn-primary {

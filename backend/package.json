@@ -11,6 +11,7 @@
     "seed": "node scripts/seed-data.js"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.16",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
     "compression": "^1.7.4",
@@ -26,7 +27,8 @@
     "redis": "^5.10.0",
     "socket.io": "^4.5.0",
     "socket.io-client": "^4.8.3",
-    "zod": "^4.3.4"
+    "zod": "^4.3.4",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "nodemon": "^2.0.0"

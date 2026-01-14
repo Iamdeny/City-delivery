@@ -88,6 +88,8 @@
   background: var(--primary);
   border-radius: 2px;
   z-index: 1;
+  left: var(--slider-left, 0%);
+  right: var(--slider-right, 0%);
 }
 
 .price-slider {

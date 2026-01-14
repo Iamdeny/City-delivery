@@ -13,6 +13,9 @@ export const API_CONFIG = {
     REFRESH_TOKEN: '/api/auth/refresh-token',
     LOGOUT: '/api/auth/logout',
     CURRENT_USER: '/api/auth/me',
+    PHONE_SEND_CODE: '/api/auth/phone/send-code',
+    PHONE_VERIFY: '/api/auth/phone/verify',
+    TELEGRAM_AUTH: '/api/auth/telegram',
     PRODUCTS: '/api/products',
     ORDERS: '/api/orders',
     CATEGORIES: '/api/products/categories',
@@ -29,7 +32,6 @@ export const WS_CONFIG = {
 export const TIMEOUTS = {
   DEBOUNCE: 300, // мс - задержка для дебаунса
   CART_SAVE: 300, // мс - задержка перед сохранением корзины
-  AUTO_RESTORE: 1000, // мс - задержка перед автовосстановлением корзины
 } as const;
 
 // Breakpoints для responsive дизайна

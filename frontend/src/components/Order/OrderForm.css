@@ -1,4 +1,8 @@
 /* Современный дизайн формы заказа */
+.order-form-full-width {
+  width: 100%;
+}
+
 .order-form-modern {
   background: var(--surface-light);
   padding: 0;

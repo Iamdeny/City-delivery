@@ -5,9 +5,9 @@
 import React, { useCallback } from 'react';
 import CartItems from './CartItems';
 import OrderForm from '../Order/OrderForm';
-import { CartItem } from '../../types/cart';
+import { CartEmptyState } from './CartEmptyState';
+import type { CartItem } from '../../shared/types';
 import { OrderResponse } from '../../services/orderService';
-import { StorageService } from '../../utils/storage';
 import { CartSkeleton } from '../Skeleton/CartSkeleton';
 import './CartModal.css';
 
@@ -31,7 +31,7 @@ interface CartModalProps {
   }) => Promise<OrderResponse>;
   onClearCart: () => void;
   onShowNotification: (message: string, type: 'success' | 'error' | 'info') => void;
-  onRestoreCart: () => boolean;
+  onGoToShopping?: () => void;
 }
 
 const CartModal: React.FC<CartModalProps> = ({
@@ -47,7 +47,7 @@ const CartModal: React.FC<CartModalProps> = ({
   onPlaceOrder,
   onClearCart,
   onShowNotification,
-  onRestoreCart,
+  onGoToShopping,
 }) => {
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -111,25 +111,7 @@ const CartModal: React.FC<CartModalProps> = ({
 
         <div className='cart-modal-content'>
           {!hasItems ? (
-            <div className='empty-cart'>
-              <div className='empty-cart-content'>
-                <div className='empty-cart-icon'>🛒</div>
-                <p>Корзина пуста</p>
-                <small>Добавьте товары из списка</small>
-                {StorageService.getCartCount() > 0 && (
-                  <button
-                    onClick={() => {
-                      if (onRestoreCart()) {
-                        onShowNotification('Корзина восстановлена', 'success');
-                      }
-                    }}
-                    className='restore-cart-button'
-                  >
-                    ♻️ Восстановить сохранённую корзину
-                  </button>
-                )}
-              </div>
-            </div>
+            <CartEmptyState onGoToShopping={onGoToShopping} />
           ) : loading && cart.length === 0 ? (
             <CartSkeleton />
           ) : (

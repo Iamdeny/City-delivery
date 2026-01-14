@@ -1,0 +1,235 @@
+/**
+ * Empty State Styles
+ * Современный дизайн 2026
+ */
+
+.cart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  min-height: 400px;
+  text-align: center;
+}
+
+.cart-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
+}
+
+.cart-empty-icon {
+  color: var(--color-neutral-300, #D1D5DB);
+  margin-bottom: 8px;
+}
+
+.cart-empty-title {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-family-base, 'Geist', sans-serif);
+  color: var(--color-text-primary, #111827);
+  margin: 0;
+}
+
+.cart-empty-description {
+  font-size: 16px;
+  color: var(--color-text-secondary, #6B7280);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cart-empty-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 28px;
+  background: var(--color-primary, #6366F1);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-family-base, 'Geist', sans-serif);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.12), 0 1px 2px rgba(99, 102, 241, 0.24);
+}
+
+.cart-empty-button:hover {
+  background: var(--color-primary-600, #4F46E5);
+  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.15), 0 2px 4px rgba(99, 102, 241, 0.12);
+}
+
+.cart-empty-button:focus-visible {
+  outline: 2px solid var(--color-primary, #6366F1);
+  outline-offset: 2px;
+}
+
+/* Блок "Вы недавно смотрели" */
+.cart-recently-viewed {
+  margin-top: 48px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.recently-viewed-title {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-family-base, 'Geist', sans-serif);
+  color: var(--color-text-primary, #111827);
+  margin: 0 0 16px 0;
+  text-align: left;
+}
+
+.recently-viewed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.recently-viewed-item {
+  position: relative;
+  background: var(--color-surface, #ffffff);
+  border-radius: 20px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #E5E7EB);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recently-viewed-item:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.recently-viewed-image {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--color-neutral-100, #F3F4F6);
+}
+
+.recently-viewed-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recently-viewed-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.recently-viewed-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary, #111827);
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recently-viewed-price {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-family-base, 'Geist', sans-serif);
+  color: var(--color-text-primary, #111827);
+  margin: 0;
+}
+
+.recently-viewed-add-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary, #6366F1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.recently-viewed-add-btn:hover {
+  background: var(--color-primary-600, #4F46E5);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.recently-viewed-add-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #6366F1);
+  outline-offset: 2px;
+}
+
+/* Мобильная версия */
+@media (max-width: 768px) {
+  .cart-empty-state {
+    padding: 32px 16px;
+    min-height: 300px;
+  }
+
+  .cart-empty-title {
+    font-size: 20px;
+  }
+
+  .cart-empty-description {
+    font-size: 14px;
+  }
+
+  .cart-empty-button {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .recently-viewed-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .recently-viewed-item {
+    padding: 10px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .cart-empty-icon {
+    color: var(--color-neutral-600, #4B5563);
+  }
+
+  .cart-empty-title {
+    color: var(--color-text-primary-dark, #ffffff);
+  }
+
+  .cart-empty-description {
+    color: var(--color-text-secondary-dark, #9CA3AF);
+  }
+
+  .recently-viewed-item {
+    background: var(--color-surface-dark, #1F2937);
+    border-color: var(--color-border-dark, #374151);
+  }
+
+  .recently-viewed-name,
+  .recently-viewed-price {
+    color: var(--color-text-primary-dark, #ffffff);
+  }
+}

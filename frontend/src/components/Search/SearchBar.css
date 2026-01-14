@@ -1,4 +1,4 @@
-/* ===== СОВРЕМЕННАЯ ПОИСКОВАЯ СТРОКА В СТИЛЕ САМОКАТА ===== */
+/* ===== СТИЛЬ САМОКАТА - ПОИСКОВАЯ СТРОКА ===== */
 
 .search-bar {
   position: relative;
@@ -9,34 +9,33 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: #F5F5F5;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  background: #F5F5F5;  /* Самокат - светло-серый фон */
+  border: none;
+  border-radius: 16px;  /* Самокат - скругление 12-16px */
+  transition: all 0.3s ease-in-out;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  height: 48px;
+  box-shadow: none;
+  height: 56px;  /* Самокат - крупный инпут */
+  padding: 0 4px;
 }
 
 .search-input-wrapper:focus-within {
-  background: var(--surface-light);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15), 0 4px 12px rgba(139, 92, 246, 0.1);
-  transform: translateY(-1px);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(238, 56, 110, 0.15);  /* Самокат Pink акцент */
 }
 
 .search-icon {
-  padding: 0 16px;
-  color: #757575;
+  padding: 0 20px;
+  color: #9E9E9E;  /* Самокат - светло-серый */
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: color 0.2s ease;
+  transition: color 0.3s ease-in-out;
 }
 
 .search-input-wrapper:focus-within .search-icon {
-  color: #8B5CF6;
+  color: #EE386E;  /* Самокат Pink */
 }
 
 .search-input {
@@ -45,7 +44,7 @@
   border: none;
   outline: none;
   font-size: 16px;
-  font-family: inherit;
+  font-family: var(--font-family-base);
   color: #212121;
   background: transparent;
   min-width: 0;
@@ -53,28 +52,29 @@
 }
 
 .search-input::placeholder {
-  color: #9E9E9E;
-  opacity: 0.8;
+  color: #9E9E9E;  /* Самокат - светло-серый текст */
+  opacity: 1;
 }
 
 .clear-search-btn {
-  padding: 0 16px;
+  padding: 0 20px;
   background: none;
   border: none;
-  color: #757575;
+  color: #9E9E9E;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
   min-width: 44px;
   flex-shrink: 0;
+  border-radius: 50%;
 }
 
 .clear-search-btn:hover {
-  color: #8B5CF6;
-  transform: scale(1.1);
+  color: #EE386E;
+  background: rgba(238, 56, 110, 0.1);
 }
 
 .clear-search-btn:active {
@@ -87,14 +87,15 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #E0E0E0;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  background: #FFFFFF;
+  border: 1px solid #F2F2F2;  /* Самокат - очень тонкая обводка */
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   z-index: 1000;
   max-height: 320px;
   overflow-y: auto;
-  animation: slideDown 0.2s ease;
+  animation: slideDown 0.3s ease-in-out;
+  margin-top: 4px;
 }
 
 @keyframes slideDown {
@@ -109,10 +110,10 @@
 }
 
 .suggestion-item {
-  padding: 14px 16px;
+  padding: 16px 20px;  /* Самокат - большие отступы */
   border-bottom: 1px solid #F5F5F5;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.3s ease-in-out;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -130,12 +131,14 @@
 
 .suggestion-item:active {
   background: #EEEEEE;
+  transform: scale(0.98);
 }
 
 .suggestion-text {
   font-weight: 500;
   color: #212121;
   font-size: 15px;
+  font-family: var(--font-family-base);
 }
 
 .suggestion-hint {
@@ -147,8 +150,8 @@
 /* Мобильные стили */
 @media (max-width: 767px) {
   .search-input-wrapper {
-    height: 44px;
-    border-radius: 10px;
+    height: 52px;
+    border-radius: 14px;
   }
 
   .search-input {
@@ -156,71 +159,32 @@
   }
 
   .search-icon {
-    padding: 0 14px;
+    padding: 0 16px;
   }
 
   .clear-search-btn {
-    padding: 0 14px;
+    padding: 0 16px;
     min-width: 40px;
   }
 
   .suggestions-dropdown {
-    border-radius: 10px;
+    border-radius: 14px;
     max-height: 280px;
   }
 
   .suggestion-item {
-    padding: 12px 14px;
+    padding: 14px 18px;
   }
 }
 
 /* Улучшения для клавиатурной навигации */
 .suggestion-item:focus-visible {
-  outline: 2px solid #F44336;
+  outline: 2px solid #EE386E;
   outline-offset: -2px;
 }
 
 .search-input:focus-visible {
   outline: none;
-}
-
-/* Адаптация для темной темы (если будет добавлена) */
-@media (prefers-color-scheme: dark) {
-  .search-input-wrapper {
-    background: #2C2C2C;
-    border-color: transparent;
-  }
-
-  .search-input-wrapper:focus-within {
-    background: #1E1E1E;
-    border-color: #F44336;
-  }
-
-  .search-input {
-    color: #FFFFFF;
-  }
-
-  .search-input::placeholder {
-    color: #9E9E9E;
-  }
-
-  .search-icon {
-    color: #9E9E9E;
-  }
-
-  .suggestions-dropdown {
-    background: #2C2C2C;
-    border-color: #404040;
-  }
-
-  .suggestion-item:hover,
-  .suggestion-item:focus {
-    background: #404040;
-  }
-
-  .suggestion-text {
-    color: #FFFFFF;
-  }
 }
 
 /* Улучшения для доступности */

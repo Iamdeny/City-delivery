@@ -1,6 +1,11 @@
 /* ===== MOBILE-FIRST СТИЛИ ===== */
 /* Базовые стили для мобильных (0-767px) */
 
+/* Utility классы */
+.separator-dot {
+  margin: 0 8px;
+}
+
 /* ===== СВЕТЛАЯ ТЕМА (по умолчанию) ===== */
 :root,
 [data-theme='light'] {
@@ -1099,19 +1104,6 @@ button:active {
   cursor: not-allowed;
 }
 
-.restore-btn {
-  padding: 8px 12px;
-  background: var(--success);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 
 /* ===== СКЕЛЕТОНЫ ===== */
 [class*='skeleton'] {
@@ -1354,17 +1346,6 @@ button:active {
   opacity: 0.5;
 }
 
-.restore-cart-button {
-  margin-top: 16px;
-  padding: 10px 20px;
-  background: var(--success);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  width: 100%;
-  font-weight: bold;
-}
 
 /* Примечание об автосохранении */
 .autosave-note {

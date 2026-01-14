@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { CartItem } from '../types/cart';
-import { Product } from '../types/product';
+import type { CartItem, Product } from '../shared/types';
 import { StorageService } from '../utils/storage';
 import { TIMEOUTS } from '../config/constants';
 
@@ -42,8 +41,8 @@ export const useCart = () => {
           name: product.name,
           price: product.price,
           category: product.category,
-          image: product.image,
-          inStock: product.inStock,
+          image: product.image ?? '',
+          inStock: product.inStock ?? true,
           quantity: 1,
         },
       ];
@@ -94,15 +93,6 @@ export const useCart = () => {
     setItems([]);
   }, []);
 
-  const restoreCart = useCallback(() => {
-    const saved = StorageService.getCart();
-    if (saved.length > 0) {
-      setItems(saved);
-      return true;
-    }
-    return false;
-  }, []);
-
   // Сохранение в localStorage
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -127,7 +117,6 @@ export const useCart = () => {
     decrementQuantity,
     updateQuantity,
     clearCart,
-    restoreCart,
   }), [
     items,
     totalAmount,
@@ -138,6 +127,5 @@ export const useCart = () => {
     decrementQuantity,
     updateQuantity,
     clearCart,
-    restoreCart,
   ]);
 };

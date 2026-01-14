@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import { QueryProvider } from './app/providers/QueryProvider';
 import './styles/design-system.css'; // Design System
 
 // Убедитесь, что элемент существует
@@ -17,7 +18,9 @@ if (!container) {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <App />
+        <QueryProvider>
+          <App />
+        </QueryProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );
@@ -26,7 +29,9 @@ if (!container) {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <App />
+        <QueryProvider>
+          <App />
+        </QueryProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );

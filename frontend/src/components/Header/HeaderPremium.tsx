@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchBar } from '../Search/SearchBar';
+import { PriceDisplay } from '../../shared/ui/PriceDisplay';
 import './HeaderPremium.css';
 
 interface HeaderPremiumProps {
@@ -9,11 +10,8 @@ interface HeaderPremiumProps {
   totalAmount: number;
   loading: boolean;
   onRefreshProducts: () => void;
-  onRestoreCart: () => boolean;
   showNotification: (message: string, type: 'success' | 'error' | 'info') => void;
   onSearchChange: (query: string) => void;
-  storageCartCount: number;
-  cartLength: number;
   user: { name: string; email: string } | null;
   onLoginClick: () => void;
   onRegisterClick?: () => void;
@@ -29,11 +27,8 @@ const HeaderPremium: React.FC<HeaderPremiumProps> = ({
   totalAmount,
   loading,
   onRefreshProducts,
-  onRestoreCart,
   showNotification,
   onSearchChange,
-  storageCartCount,
-  cartLength,
   user,
   onLoginClick,
   onRegisterClick,
@@ -65,13 +60,6 @@ const HeaderPremium: React.FC<HeaderPremiumProps> = ({
     setPrevCartItems(totalItems);
   }, [totalItems]); // Убрали prevCartItems из зависимостей
 
-  const handleRestoreClick = useCallback(() => {
-    if (onRestoreCart()) {
-      showNotification('Корзина восстановлена', 'success');
-    }
-  }, [onRestoreCart, showNotification]);
-
-  const shouldShowRestoreButton = storageCartCount > 0 && cartLength === 0;
 
   return (
     <motion.header
@@ -167,22 +155,6 @@ const HeaderPremium: React.FC<HeaderPremiumProps> = ({
 
           {/* Правая секция: Действия */}
           <div className="header-premium__right">
-            {/* Restore Cart Button */}
-            {shouldShowRestoreButton && (
-              <motion.button
-                className="restore-cart-btn"
-                onClick={handleRestoreClick}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
-                </svg>
-              </motion.button>
-            )}
 
             {/* Refresh Button */}
             <motion.button
@@ -225,7 +197,7 @@ const HeaderPremium: React.FC<HeaderPremiumProps> = ({
               {hasItems && (
                 <div className="cart-info">
                   <span className="cart-amount">
-                    {totalAmount.toLocaleString('ru-RU')} ₽
+                    <PriceDisplay price={totalAmount} size="md" />
                   </span>
                   <span className="cart-eta">~15 мин</span>
                 </div>

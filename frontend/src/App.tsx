@@ -2,7 +2,6 @@ import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { logRender } from './debug-renders';
 import { useProducts } from './hooks/useProducts';
 import { useCart } from './hooks/useCart';
-import { StorageService } from './utils/storage';
 import { ProductSkeleton } from './components/Skeleton/ProductSkeleton';
 import { CartSkeleton } from './components/Skeleton/CartSkeleton';
 import { useProductFilters, SortOption } from './hooks/useProductFilters';
@@ -20,7 +19,6 @@ import { Breadcrumbs } from './components/Navigation/Breadcrumbs';
 import Footer from './components/Footer/Footer';
 import LoginForm from './components/Auth/LoginForm';
 import FloatingCartButton from './components/Mobile/FloatingCartButton';
-import BottomNav from './components/Mobile/BottomNav';
 import { orderService } from './services/orderService';
 import { authService, type User } from './services/authService';
 import { websocketService } from './services/websocketService';
@@ -78,7 +76,6 @@ function App() {
     decrementQuantity,
     updateQuantity,
     clearCart,
-    restoreCart,
     hasItems,
   } = useCart();
 
@@ -250,24 +247,6 @@ function App() {
     syncUrlWithFilters,
   ]);
 
-  // Автовосстановление корзины
-  useEffect(() => {
-    if (StorageService.getCartCount() > 0 && cart.length === 0) {
-      const timer = setTimeout(() => {
-        const shouldAutoRestore = window.confirm(
-          `Найдена сохранённая корзина с ${StorageService.getCartCount()} товарами. Восстановить?`
-        );
-        if (shouldAutoRestore) {
-          restoreCart();
-          showNotification('Корзина восстановлена', 'success');
-        }
-      }, TIMEOUTS.AUTO_RESTORE);
-
-      return () => clearTimeout(timer);
-    }
-  // restoreCart и showNotification стабильны (из useCart и useNotifications)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart.length]);
 
   // Хлебные крошки (мемоизировано)
   const breadcrumbsItems = useMemo(() => {
@@ -358,11 +337,8 @@ function App() {
         totalAmount={totalAmount}
         loading={loading}
         onRefreshProducts={refreshProducts}
-        onRestoreCart={restoreCart}
         showNotification={showNotification}
         onSearchChange={setSearchQuery}
-        storageCartCount={StorageService.getCartCount()}
-        cartLength={cart.length}
         user={user}
         onLoginClick={() => setShowLogin('login')}
         onRegisterClick={() => setShowLogin('register')}
@@ -411,7 +387,7 @@ function App() {
         {activeFiltersCount > 0 && (
           <div className='url-info'>
             <span>🎯 Активных фильтров: {activeFiltersCount}</span>
-            <span style={{ margin: '0 8px' }}>•</span>
+            <span className="separator-dot">•</span>
             <span>
               🔗{' '}
               <a
@@ -545,7 +521,10 @@ function App() {
         onPlaceOrder={handlePlaceOrder}
         onClearCart={clearCart}
         onShowNotification={showNotification}
-        onRestoreCart={restoreCart}
+        onGoToShopping={() => {
+          setShowCartModal(false);
+          setActiveTab('home');
+        }}
       />
 
       {/* Плавающая кнопка корзины (только на мобильных) */}
@@ -561,18 +540,6 @@ function App() {
         />
       )}
 
-      {/* Нижняя навигация (только на мобильных) */}
-      {isMobile && (
-        <BottomNav
-          activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            if (tab === 'cart') {
-              setShowCartModal(true);
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
