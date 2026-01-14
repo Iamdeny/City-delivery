@@ -1,5 +1,5 @@
 import { productsResponseSchema } from '../schemas/product.schema';
-import type { Product } from '../types/product';
+import type { Product } from '../shared/types';
 
 // Резервные данные из вашего кода
 const backupProducts: Product[] = [
@@ -9,9 +9,10 @@ const backupProducts: Product[] = [
     price: 89,
     category: 'Молочные продукты',
     image: '🥛',
+    inStock: true,
   },
-  { id: 2, name: 'Хлеб Бородинский', price: 45, category: 'Хлеб', image: '🍞' },
-  { id: 3, name: 'Яйца 10 шт', price: 120, category: 'Яйца', image: '🥚' },
+  { id: 2, name: 'Хлеб Бородинский', price: 45, category: 'Хлеб', image: '🍞', inStock: true },
+  { id: 3, name: 'Яйца 10 шт', price: 120, category: 'Яйца', image: '🥚', inStock: true },
 ];
 
 export class ProductService {

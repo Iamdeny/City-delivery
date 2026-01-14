@@ -112,9 +112,9 @@ export const PriceFilter: React.FC<PriceFilterProps> = ({
           <div
             className='price-slider-range'
             style={{
-              left: `${percentageMin}%`,
-              right: `${100 - percentageMax}%`,
-            }}
+              '--slider-left': `${percentageMin}%`,
+              '--slider-right': `${100 - percentageMax}%`,
+            } as React.CSSProperties}
           />
 
           <input

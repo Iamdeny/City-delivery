@@ -1,5 +1,8 @@
 import React, { useCallback, useMemo } from 'react';
-import type { CartItem } from '../../types/cart';
+import type { CartItem } from '../../shared/types';
+import { formatPrice } from '../../shared/lib/format';
+import { PriceDisplay } from '../../shared/ui/PriceDisplay';
+import { QuantityControls } from '../../shared/ui/QuantityControls';
 import './CartItems.css';
 
 interface CartItemsProps {
@@ -32,7 +35,7 @@ function CartItems({
   );
 
   const formattedTotal = useMemo(
-    () => totalAmount.toLocaleString('ru-RU'),
+    () => formatPrice(totalAmount),
     [totalAmount]
   );
 
@@ -78,29 +81,17 @@ function CartItems({
                 <p className='cart-item-weight'>{item.category}</p>
               )}
               <div className='cart-item-footer'>
-                <div className='quantity-controls-modern'>
-                  <button
-                    type='button'
-                    className='quantity-btn-modern minus'
-                    onClick={() => handleDecrease(item.id, item.quantity)}
-                    aria-label={`Уменьшить количество ${item.name}`}
-                    disabled={item.quantity <= 1}
-                  >
-                    −
-                  </button>
-                  <span className='quantity-value-modern'>{item.quantity}</span>
-                  <button
-                    type='button'
-                    className='quantity-btn-modern plus'
-                    onClick={() => handleIncrease(item.id, item.quantity)}
-                    aria-label={`Увеличить количество ${item.name}`}
-                  >
-                    +
-                  </button>
-                </div>
-                <div className='cart-item-price-modern'>
-                  {(item.price * item.quantity).toLocaleString('ru-RU')} ₽
-                </div>
+                {/* Унифицированные QuantityControls (устранено 3+ дубликата) */}
+                <QuantityControls
+                  quantity={item.quantity}
+                  onIncrement={() => handleIncrease(item.id, item.quantity)}
+                  onDecrement={() => handleDecrease(item.id, item.quantity)}
+                  size="md"
+                  variant="modern"
+                  min={1}
+                />
+                {/* Унифицированный PriceDisplay (устранено 1 дубликат) */}
+                <PriceDisplay price={item.price * item.quantity} size="md" className="cart-item-price-modern" />
               </div>
             </div>
           </div>

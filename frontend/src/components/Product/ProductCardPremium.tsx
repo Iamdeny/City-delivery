@@ -3,10 +3,13 @@
  * HD images, bold typography, smooth animations
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Product } from '../../types/product';
+import type { Product } from '../../shared/types';
 import type { ProductComponentProps } from '../../types/common';
+import { useCartActions } from '../../shared/hooks/useCartActions';
+import { PriceDisplay } from '../../shared/ui/PriceDisplay';
+import { QuantityControls } from '../../shared/ui/QuantityControls';
 import './ProductCardPremium.css';
 
 interface ProductCardPremiumProps extends ProductComponentProps {
@@ -17,19 +20,24 @@ interface ProductCardPremiumProps extends ProductComponentProps {
   onQuickView?: (product: Product) => void;
 }
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&q=80';
+// Placeholder изображение (data URI) - всегда доступно, не требует интернета
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7Qn9C+0LvRg9GH0LjRgtGMINC/0LXRgNC10L3QuNC1PC90ZXh0Pjwvc3ZnPg==';
+
+// Функция для создания placeholder по категории
+const createCategoryPlaceholder = (category: string, color: string) => {
+  const text = encodeURIComponent(category.substring(0, 15));
+  return `https://via.placeholder.com/400x300/${color}/666666?text=${text}`;
+};
+
+// Используем placeholder.com как основной источник (более надежный чем Unsplash)
+const DEFAULT_IMAGE = createCategoryPlaceholder('Товар', 'E5E5E5');
 
 const CATEGORY_IMAGES: Record<string, string> = {
-  'Молочные продукты':
-    'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=300&fit=crop&q=80',
+  'Молочные продукты': createCategoryPlaceholder('Молочные', 'F0F8FF'),
   Бакалея: DEFAULT_IMAGE,
-  Колбасы:
-    'https://images.unsplash.com/photo-1589225521590-4c6c5a5c8b3e?w=400&h=300&fit=crop&q=80',
-  'Кофе/Чай':
-    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop&q=80',
-  Напитки:
-    'https://images.unsplash.com/photo-1520342868574-5fa3804e551c?w=400&h=300&fit=crop&q=80',
+  Колбасы: createCategoryPlaceholder('Колбасы', 'FFF0F5'),
+  'Кофе/Чай': createCategoryPlaceholder('Кофе/Чай', 'F5F5DC'),
+  Напитки: createCategoryPlaceholder('Напитки', 'E0F2F1'),
 } as const;
 
 function ProductCardPremium({ 
@@ -43,6 +51,7 @@ function ProductCardPremium({
 }: ProductCardPremiumProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>('');
 
   // Мемоизируем изображение
   const productImage = useMemo(() => {
@@ -52,28 +61,42 @@ function ProductCardPremium({
     return CATEGORY_IMAGES[product.category] || DEFAULT_IMAGE;
   }, [product.image, product.category]);
 
+  // Инициализируем текущий источник изображения
+  useEffect(() => {
+    setCurrentImageSrc(productImage);
+    setImageError(false);
+    setImageLoaded(false);
+  }, [productImage]);
+
   const handleImageLoad = () => {
     setImageLoaded(true);
+    setImageError(false);
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setImageError(true);
-    e.currentTarget.src = DEFAULT_IMAGE;
-  };
-
-  const handleAddToCart = () => {
-    onAddToCart(product);
-  };
-
-  const handleDecrement = () => {
-    if (onRemoveFromCart && cartQuantity > 0) {
-      onRemoveFromCart(product);
+    const img = e.currentTarget;
+    
+    // Если уже используем placeholder - не пытаемся снова
+    if (img.src === PLACEHOLDER_IMAGE || img.src.startsWith('data:')) {
+      return;
+    }
+    
+    // Если текущий источник - это внешний URL (Unsplash или placeholder.com)
+    // и он не загрузился - переключаемся на data URI placeholder
+    if (currentImageSrc !== PLACEHOLDER_IMAGE) {
+      setImageError(true);
+      setCurrentImageSrc(PLACEHOLDER_IMAGE);
+      img.src = PLACEHOLDER_IMAGE;
     }
   };
 
-  const handleIncrement = () => {
-    onAddToCart(product);
-  };
+  // Унифицированные обработчики через useCartActions (устранено 4 дубликата)
+  const { handleAddToCart, handleIncrement, handleDecrement } = useCartActions({
+    onAddToCart,
+    onRemoveFromCart,
+    product,
+    cartQuantity,
+  });
 
   const handleQuickView = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,8 +105,7 @@ function ProductCardPremium({
     }
   };
 
-  // Вычисляем финальную цену
-  const finalPrice = discount ? product.price * (1 - discount / 100) : product.price;
+  // Вычисляем hasDiscount только для badge (цена обрабатывается в PriceDisplay)
   const hasDiscount = discount && discount > 0;
 
   return (
@@ -103,7 +125,7 @@ function ProductCardPremium({
         )}
         
         <img
-          src={productImage}
+          src={currentImageSrc || productImage}
           alt={product.name}
           loading='lazy'
           className={`product-img-premium ${imageLoaded ? 'loaded' : ''}`}
@@ -165,58 +187,27 @@ function ProductCardPremium({
 
         {/* Footer: Price + Actions */}
         <div className='product-footer-premium'>
-          {/* Price */}
-          <div className='product-price-container'>
-            {hasDiscount && (
-              <span className='product-price-old'>
-                {product.price.toLocaleString('ru-RU')}₽
-              </span>
-            )}
-            <span className='product-price-premium'>
-              {Math.round(finalPrice).toLocaleString('ru-RU')}₽
-            </span>
-          </div>
+          {/* Унифицированный PriceDisplay (устранено 2 дубликата форматирования) */}
+          <PriceDisplay price={product.price} discount={discount} size="lg" className="product-price-premium" />
 
-          {/* Add to Cart / Quantity Controls (от Getir - круглые кнопки) */}
+          {/* Унифицированные QuantityControls (устранено 3+ дубликата) */}
           <AnimatePresence mode="wait">
             {cartQuantity > 0 ? (
-              <motion.div 
+              <motion.div
                 key="quantity-controls"
-                className='quantity-controls-premium'
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 25 }}
               >
-                <motion.button
-                  type='button'
-                  className='quantity-btn-premium minus'
-                  onClick={handleDecrement}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label='Уменьшить количество'
-                >
-                  −
-                </motion.button>
-                
-                <motion.span 
-                  className='quantity-value-premium'
-                  key={cartQuantity}
-                  initial={{ scale: 1.3, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {cartQuantity}
-                </motion.span>
-                
-                <motion.button
-                  type='button'
-                  className='quantity-btn-premium plus'
-                  onClick={handleIncrement}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label='Увеличить количество'
-                >
-                  +
-                </motion.button>
+                <QuantityControls
+                  quantity={cartQuantity}
+                  onIncrement={handleIncrement}
+                  onDecrement={handleDecrement}
+                  size="md"
+                  variant="premium"
+                  max={99}
+                />
               </motion.div>
             ) : (
               <motion.button

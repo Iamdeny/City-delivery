@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Product } from '../types/product';
+import type { Product } from '../shared/types';
 import { FILTERS } from '../config/constants';
 
 export type SortOption =

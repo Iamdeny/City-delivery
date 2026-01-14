@@ -9,7 +9,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1100; /* Выше BottomNav (1000) */
+  z-index: 1100; /* Выше всех фиксированных элементов */
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -157,22 +157,6 @@
   margin-bottom: 24px;
 }
 
-.restore-cart-button {
-  padding: 12px 24px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.restore-cart-button:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-}
 
 /* Анимации */
 @keyframes fadeIn {

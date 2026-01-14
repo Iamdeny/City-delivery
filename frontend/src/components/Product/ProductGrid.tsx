@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import type { Product } from '../../types/product';
-import type { CartItem } from '../../types/cart';
+import type { Product, CartItem } from '../../shared/types';
 import ProductCardPremium from './ProductCardPremium';
 import './ProductGrid.css';
 

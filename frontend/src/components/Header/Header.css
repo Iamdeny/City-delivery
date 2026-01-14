@@ -249,23 +249,6 @@
     cursor: not-allowed;
   }
 
-  /* Кнопка восстановления (десктоп) */
-  .restore-btn-desktop {
-    padding: 10px 16px;
-    background: #FFF3E0;
-    border: 1px solid #FFB74D;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #E65100;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .restore-btn-desktop:hover {
-    background: #FFE0B2;
-    transform: translateY(-1px);
-  }
 
   /* Кнопка корзины (десктоп) */
   .cart-btn-desktop {

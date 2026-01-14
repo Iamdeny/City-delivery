@@ -32,6 +32,29 @@ export interface RegisterData {
   phone?: string;
 }
 
+export interface PhoneOTPResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface PhoneVerifyResponse extends AuthResponse {
+  isNew?: boolean; // Был ли создан новый пользователь
+}
+
+export interface TelegramAuthData {
+  id: string;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
+export interface TelegramAuthResponse extends AuthResponse {
+  isNew?: boolean; // Был ли создан новый пользователь
+}
+
 class AuthService {
   private getAccessToken(): string | null {
     return localStorage.getItem(`${STORAGE_KEYS.PREFIX}access_token`);
@@ -246,6 +269,102 @@ class AuthService {
   }
 
   /**
+   * Отправка OTP кода на телефон
+   */
+  async sendPhoneOTP(phone: string): Promise<PhoneOTPResponse> {
+    try {
+      logger.log('📱 Отправка OTP кода на телефон...');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PHONE_SEND_CODE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
+      }
+
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Пустой ответ от сервера');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        logger.error('Ошибка парсинга JSON:', parseError);
+        throw new Error('Сервер вернул некорректный JSON');
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error || `Ошибка отправки кода (${response.status})`);
+      }
+
+      logger.log('✅ OTP код отправлен');
+      return result;
+    } catch (error) {
+      logger.error('Ошибка отправки OTP:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Вход/Регистрация по телефону с OTP
+   */
+  async verifyPhoneOTP(phone: string, code: string): Promise<PhoneVerifyResponse> {
+    try {
+      logger.log('🔐 Верификация OTP кода...');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PHONE_VERIFY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone, code }),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
+      }
+
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Пустой ответ от сервера');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        logger.error('Ошибка парсинга JSON:', parseError);
+        throw new Error('Сервер вернул некорректный JSON');
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error || `Ошибка верификации (${response.status})`);
+      }
+
+      if (result.success && result.accessToken) {
+        this.setTokens(result.accessToken, result.refreshToken);
+        localStorage.setItem(`${STORAGE_KEYS.PREFIX}user`, JSON.stringify(result.user));
+        logger.log(result.isNew ? '✅ Регистрация по телефону успешна' : '✅ Вход по телефону успешен');
+        return result;
+      }
+
+      throw new Error('Неожиданный формат ответа');
+    } catch (error) {
+      logger.error('Ошибка верификации OTP:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Получение информации о текущем пользователе с сервера
    */
   async getMe(): Promise<User> {
@@ -317,6 +436,60 @@ class AuthService {
       throw new Error('Неожиданный формат ответа');
     } catch (error) {
       logger.error('Ошибка получения пользователя:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Авторизация через Telegram Login Widget
+   */
+  async verifyTelegramAuth(telegramData: TelegramAuthData): Promise<TelegramAuthResponse> {
+    try {
+      logger.log('📱 Авторизация через Telegram...');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TELEGRAM_AUTH}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(telegramData),
+      });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
+      }
+
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Пустой ответ от сервера');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        logger.error('Ошибка парсинга JSON:', parseError);
+        throw new Error('Сервер вернул некорректный JSON');
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error || `Ошибка авторизации через Telegram (${response.status})`);
+      }
+
+      if (result.success && result.user && result.accessToken && result.refreshToken) {
+        // Сохраняем токены
+        localStorage.setItem(`${STORAGE_KEYS.PREFIX}access_token`, result.accessToken);
+        localStorage.setItem(`${STORAGE_KEYS.PREFIX}refresh_token`, result.refreshToken);
+        localStorage.setItem(`${STORAGE_KEYS.PREFIX}user`, JSON.stringify(result.user));
+
+        logger.log(result.isNew ? '✅ Регистрация через Telegram выполнена' : '✅ Вход через Telegram выполнен');
+        return result;
+      }
+
+      throw new Error('Неожиданный формат ответа от сервера');
+    } catch (error) {
+      logger.error('Ошибка авторизации через Telegram:', error);
       throw error;
     }
   }

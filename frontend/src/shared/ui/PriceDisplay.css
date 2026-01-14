@@ -1,0 +1,33 @@
+/**
+ * Стили для унифицированного компонента PriceDisplay
+ */
+.price-display {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-xs, 4px);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--text-primary, #0F172A);
+}
+
+.price-display-sm {
+  font-size: var(--font-size-base, 16px);
+}
+
+.price-display-md {
+  font-size: var(--font-size-lg, 18px);
+}
+
+.price-display-lg {
+  font-size: var(--font-size-xl, 20px);
+}
+
+.price-display-original {
+  font-size: 0.85em;
+  text-decoration: line-through;
+  color: var(--text-secondary, #64748B);
+  opacity: 0.7;
+}
+
+.price-display-final {
+  color: var(--primary, #6366F1);
+}

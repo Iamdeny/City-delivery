@@ -13,6 +13,8 @@ const {
   validateLogin,
   validateRefreshToken,
 } = require('../validators/auth.validator');
+const otpService = require('../services/otpService');
+const telegramAuthService = require('../services/telegramAuthService');
 
 /**
  * Регистрация
@@ -164,6 +166,143 @@ router.get('/me', authenticate, async (req, res) => {
   } catch (error) {
     logger.error('Ошибка получения пользователя:', error);
     res.status(500).json({ error: 'Ошибка получения пользователя' });
+  }
+});
+
+/**
+ * Отправка OTP кода на телефон
+ * POST /api/auth/phone/send-code
+ * Body: { phone: string }
+ */
+router.post('/phone/send-code', async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ error: 'Телефон обязателен' });
+    }
+
+    const result = await otpService.sendOTPCode(phone);
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Ошибка отправки OTP:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Ошибка отправки кода',
+    });
+  }
+});
+
+/**
+ * Вход/Регистрация по телефону с OTP
+ * POST /api/auth/phone/verify
+ * Body: { phone: string, code: string }
+ */
+router.post('/phone/verify', async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+
+    if (!phone || !code) {
+      return res.status(400).json({ error: 'Телефон и код обязательны' });
+    }
+
+    // Проверяем OTP код
+    const otpResult = await otpService.verifyOTP(phone, code);
+
+    if (!otpResult.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: otpResult.message || 'Неверный код',
+      });
+    }
+
+    // Получаем или создаем пользователя
+    const { user, isNew } = await otpService.getOrCreateUserByPhone(phone);
+
+    // Генерируем токены
+    const tokens = generateTokens(user.id, user.role);
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      isNew, // Информируем, был ли создан новый пользователь
+      ...tokens,
+    });
+  } catch (error) {
+    logger.error('Ошибка верификации OTP:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Ошибка верификации',
+    });
+  }
+});
+
+/**
+ * Авторизация через Telegram Login Widget
+ * POST /api/auth/telegram
+ * Body: { id, first_name, last_name, username, photo_url, auth_date, hash }
+ */
+router.post('/telegram', async (req, res) => {
+  try {
+    const telegramData = req.body;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+    if (!botToken) {
+      logger.error('[Telegram Auth] TELEGRAM_BOT_TOKEN не установлен в .env');
+      return res.status(500).json({
+        success: false,
+        error: 'Конфигурация Telegram не настроена',
+      });
+    }
+
+    // Проверяем обязательные поля
+    if (!telegramData.id || !telegramData.hash || !telegramData.auth_date) {
+      return res.status(400).json({
+        success: false,
+        error: 'Недостаточно данных от Telegram',
+      });
+    }
+
+    // Проверяем срок действия данных
+    if (!telegramAuthService.isAuthDateValid(telegramData.auth_date)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Данные авторизации устарели. Пожалуйста, войдите снова.',
+      });
+    }
+
+    // Проверяем подпись (hash)
+    if (!telegramAuthService.verifyHash(telegramData, botToken)) {
+      logger.warn(`[Telegram Auth] Неверная подпись для telegram_id=${telegramData.id}`);
+      return res.status(401).json({
+        success: false,
+        error: 'Неверная подпись данных. Попытка подделки данных.',
+      });
+    }
+
+    // Создаем или находим пользователя
+    const { user, isNew, tokens } = await telegramAuthService.getOrCreateUserByTelegram(telegramData);
+
+    logger.info(`[Telegram Auth] Успешная авторизация: user_id=${user.id}, isNew=${isNew}`);
+
+    res.json({
+      success: true,
+      user,
+      isNew,
+      ...tokens,
+    });
+  } catch (error) {
+    logger.error('[Telegram Auth] Ошибка авторизации через Telegram:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Ошибка авторизации через Telegram',
+    });
   }
 });
 

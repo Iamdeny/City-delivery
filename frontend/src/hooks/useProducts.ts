@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { productService } from '../services/product.service';
-import type { Product } from '../types/product';
+import type { Product } from '../shared/types';
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);

@@ -95,10 +95,17 @@ const validateCreateOrder = (req, res, next) => {
   const result = createOrderSchema.safeParse(req.body);
 
   if (!result.success) {
-    const errors = result.error.errors.map((err) => ({
-      field: err.path.join('.'),
-      message: err.message,
-    }));
+    let errors = [];
+    if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
+      errors = result.error.errors.map((err) => ({
+        field: (err.path && Array.isArray(err.path) ? err.path.join('.') : 'unknown') || 'unknown',
+        message: err.message || 'Ошибка валидации',
+      }));
+    }
+    
+    if (errors.length === 0) {
+      errors = [{ field: 'unknown', message: 'Ошибка валидации данных' }];
+    }
 
     return res.status(400).json({
       error: 'Ошибка валидации',
@@ -122,10 +129,17 @@ const validateUpdateOrderStatus = (req, res, next) => {
   const result = updateOrderStatusSchema.safeParse(req.body);
 
   if (!result.success) {
-    const errors = result.error.errors.map((err) => ({
-      field: err.path.join('.'),
-      message: err.message,
-    }));
+    let errors = [];
+    if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
+      errors = result.error.errors.map((err) => ({
+        field: (err.path && Array.isArray(err.path) ? err.path.join('.') : 'unknown') || 'unknown',
+        message: err.message || 'Ошибка валидации',
+      }));
+    }
+    
+    if (errors.length === 0) {
+      errors = [{ field: 'unknown', message: 'Ошибка валидации данных' }];
+    }
 
     return res.status(400).json({
       error: 'Ошибка валидации',

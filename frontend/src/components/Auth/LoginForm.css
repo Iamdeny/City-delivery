@@ -1,135 +1,217 @@
+/* ===== СТИЛЬ САМОКАТА - ФОРМА ВХОДА/РЕГИСТРАЦИИ ===== */
+
 .login-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s;
+  z-index: 1050;
+  animation: fadeIn 0.3s ease-in-out;
+  padding: 20px;
+}
+
+/* Переключатель метода авторизации */
+.auth-method-switcher {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: #F5F5F5;
+  padding: 4px;
+  border-radius: 16px;
+}
+
+.method-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family-base);
+  color: #9E9E9E;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.method-btn:hover {
+  color: #212121;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.method-btn.active {
+  background: #FFFFFF;
+  color: #EE386E;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(238, 56, 110, 0.15);
+}
+
+.method-btn:active {
+  transform: scale(0.98);
 }
 
 .login-modal {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-radius: 24px;
-  padding: 32px;
-  max-width: 400px;
-  width: 90%;
+  background: #FFFFFF;
+  border-radius: 24px;  /* Самокат - мягкие углы */
+  padding: 32px;  /* Самокат - большие внутренние отступы */
+  max-width: 420px;
+  width: 100%;
   position: relative;
-  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(139, 92, 246, 0.2);
-  border: 1px solid var(--glass-border);
+  animation: slideUp 0.3s ease-in-out;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: none;  /* Самокат - отсутствие жестких границ */
 }
 
 .login-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 20px;
+  right: 20px;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
-  color: #6b7280;
+  color: #9E9E9E;
   padding: 4px;
   line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease-in-out;
 }
 
 .login-close:hover {
-  color: #1f2937;
+  color: #212121;
+  background: #F5F5F5;
+}
+
+.login-close:active {
+  transform: scale(0.95);
 }
 
 .login-modal h2 {
-  margin: 0 0 24px 0;
-  font-size: 24px;
-  color: #1f2937;
+  margin: 0 0 32px 0;  /* Самокат - большие отступы */
+  font-size: 28px;
+  font-weight: 700;  /* Самокат - жирные заголовки */
+  color: #212121;
+  font-family: var(--font-family-base);
+  letter-spacing: -0.5px;
 }
 
 .login-error {
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  background: #FFF5F5;
+  color: #DC2626;
+  padding: 16px 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
   font-size: 14px;
+  border: 1px solid #FEE2E2;
 }
 
 .login-modal .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 24px;  /* Самокат - большие отступы между полями */
 }
 
 .login-modal .form-group label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-weight: 500;
-  color: #374151;
+  color: #424242;
   font-size: 14px;
 }
 
 .login-modal .form-group input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s;
+  padding: 16px 20px;  /* Самокат - крупные поля */
+  border: 1px solid #E0E0E0;
+  border-radius: 16px;  /* Самокат - мягкие углы */
+  font-size: 16px;
+  font-family: var(--font-family-base);
+  background: #FFFFFF;
+  color: #212121;
+  transition: all 0.3s ease-in-out;
+  box-sizing: border-box;
+}
+
+.login-modal .form-group input::placeholder {
+  color: #9E9E9E;
 }
 
 .login-modal .form-group input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+  border-color: #EE386E;  /* Самокат Pink */
+  box-shadow: 0 0 0 3px rgba(238, 56, 110, 0.1);
+  background: #FFFFFF;
 }
 
 .login-submit {
   width: 100%;
-  padding: 14px;
-  background: var(--primary);
-  color: var(--text-on-primary);
+  padding: 18px;  /* Самокат - крупные кнопки */
+  background: #EE386E;  /* Самокат Pink */
+  color: #FFFFFF;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 16px;  /* Самокат - мягкие углы */
   font-size: 16px;
   font-weight: 600;
+  font-family: var(--font-family-base);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease-in-out;
   margin-top: 8px;
-  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+  box-shadow: 0 2px 8px rgba(238, 56, 110, 0.25);
 }
 
 .login-submit:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: #DB2777;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  box-shadow: 0 4px 12px rgba(238, 56, 110, 0.35);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: scale(0.98);  /* Самокат - легкое уменьшение */
+  box-shadow: 0 2px 6px rgba(238, 56, 110, 0.3);
 }
 
 .login-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .login-switch {
-  margin-top: 20px;
+  margin-top: 24px;  /* Самокат - большие отступы */
   text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid #F2F2F2;  /* Самокат - тонкая обводка */
 }
 
 .login-switch-btn {
   background: none;
   border: none;
-  color: var(--primary);
+  color: #EE386E;  /* Самокат Pink */
   cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  padding: 4px;
-  transition: color 0.2s;
+  font-weight: 500;
+  font-family: var(--font-family-base);
+  text-decoration: none;
+  padding: 8px;
+  transition: all 0.3s ease-in-out;
 }
 
 .login-switch-btn:hover {
-  color: var(--primary-dark);
+  color: #DB2777;
+  text-decoration: underline;
+}
+
+.login-switch-btn:active {
+  transform: scale(0.98);
 }
 
 @keyframes fadeIn {
@@ -143,7 +225,7 @@
 
 @keyframes slideUp {
   from {
-    transform: translateY(20px);
+    transform: translateY(24px);
     opacity: 0;
   }
   to {
@@ -152,3 +234,178 @@
   }
 }
 
+/* Мобильные стили */
+@media (max-width: 767px) {
+  .login-modal {
+    padding: 24px 20px;
+    border-radius: 20px;
+    max-width: 100%;
+  }
+
+  .login-modal h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+
+  .login-modal .form-group {
+    margin-bottom: 20px;
+  }
+
+  .login-modal .form-group input {
+    padding: 14px 18px;
+    font-size: 16px;  /* Предотвращает зум на iOS */
+  }
+
+  .login-submit {
+    padding: 16px;
+  }
+}
+
+/* Phone/OTP специфичные стили */
+.phone-input-step,
+.otp-input-step {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.otp-info {
+  text-align: center;
+  padding: 16px;
+  background: #F5F5F5;
+  border-radius: 16px;
+  margin-bottom: 8px;
+}
+
+.otp-info p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #424242;
+  font-weight: 500;
+}
+
+.change-phone-btn {
+  background: none;
+  border: none;
+  color: #EE386E;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px;
+  transition: color 0.3s ease-in-out;
+}
+
+.change-phone-btn:hover {
+  color: #DB2777;
+}
+
+.otp-input {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 8px;
+  font-family: 'Courier New', monospace;
+}
+
+.otp-resend-info {
+  text-align: center;
+  font-size: 14px;
+  color: #9E9E9E;
+  margin: 8px 0 0 0;
+}
+
+.resend-otp-btn {
+  background: none;
+  border: none;
+  color: #EE386E;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px;
+  margin-top: 8px;
+  transition: color 0.3s ease-in-out;
+}
+
+.resend-otp-btn:hover:not(:disabled) {
+  color: #DB2777;
+}
+
+.resend-otp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Telegram авторизация */
+.telegram-auth-section {
+  margin: 24px 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+  color: #9E9E9E;
+  font-size: 14px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #E5E5E5;
+}
+
+.divider span {
+  padding: 0 16px;
+}
+
+.telegram-login-btn {
+  width: 100%;
+  height: 52px;
+  background: #0088cc;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-family-base);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease-in-out;
+  margin-top: 16px;
+  box-shadow: 0 2px 8px rgba(0, 136, 204, 0.2);
+}
+
+.telegram-login-btn:hover:not(:disabled) {
+  background: #0077b5;
+  transform: scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+}
+
+.telegram-login-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.telegram-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Улучшения для доступности */
+@media (prefers-reduced-motion: reduce) {
+  .login-overlay,
+  .login-modal,
+  .login-close,
+  .login-submit,
+  .login-switch-btn,
+  .method-btn {
+    animation: none;
+    transition: none;
+  }
+}

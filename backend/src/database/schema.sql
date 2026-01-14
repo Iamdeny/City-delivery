@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
+    telegram_id BIGINT UNIQUE, -- Telegram user ID (для авторизации через Telegram)
+    telegram_avatar VARCHAR(500), -- URL аватара из Telegram
     role VARCHAR(50) DEFAULT 'customer', -- customer, courier, picker, admin, manager
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT NOW(),

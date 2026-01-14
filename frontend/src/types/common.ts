@@ -2,8 +2,7 @@
  * Общие типы для компонентов
  */
 
-import type { Product } from './product';
-import type { CartItem } from './cart';
+import type { Product, CartItem } from '../shared/types';
 import type { SortOption } from '../hooks/useProductFilters';
 
 /**

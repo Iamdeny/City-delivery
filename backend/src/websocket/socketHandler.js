@@ -15,10 +15,28 @@ function setupWebSocket(io) {
       const token = socket.handshake.auth.token;
 
       if (!token) {
+        logger.warn('WebSocket: Токен не предоставлен');
         return next(new Error('Токен не предоставлен'));
       }
 
-      const decoded = jwt.verify(token, JWT_SECRET);
+      let decoded;
+      try {
+        decoded = jwt.verify(token, JWT_SECRET);
+      } catch (jwtError) {
+        logger.error('WebSocket: Ошибка верификации токена:', {
+          error: jwtError.name,
+          message: jwtError.message,
+          secretLength: JWT_SECRET?.length || 0,
+        });
+        
+        if (jwtError.name === 'JsonWebTokenError') {
+          return next(new Error('Невалидный токен: ' + jwtError.message));
+        }
+        if (jwtError.name === 'TokenExpiredError') {
+          return next(new Error('Токен истек'));
+        }
+        return next(new Error('Ошибка верификации токена: ' + jwtError.message));
+      }
       
       // Получаем пользователя
       const result = await query(
@@ -27,13 +45,16 @@ function setupWebSocket(io) {
       );
 
       if (result.rows.length === 0) {
-        return next(new Error('Пользователь не найден'));
+        logger.warn(`WebSocket: Пользователь ${decoded.userId} не найден или неактивен`);
+        return next(new Error('Пользователь не найден или неактивен'));
       }
 
       socket.user = result.rows[0];
+      logger.log(`WebSocket: Токен валиден для пользователя ${socket.user.email}`);
       next();
     } catch (error) {
-      next(new Error('Невалидный токен'));
+      logger.error('WebSocket: Неожиданная ошибка аутентификации:', error);
+      next(new Error('Ошибка аутентификации: ' + error.message));
     }
   });
 

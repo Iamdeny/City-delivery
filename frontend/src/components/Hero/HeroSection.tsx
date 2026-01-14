@@ -88,7 +88,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Rotating Promo Banner (от Gorillas - визуальный акцент) */}
       <div 
         className="hero-promo"
-        style={{ backgroundColor: currentPromo.bgColor }}
+        style={{ '--promo-bg': currentPromo.bgColor } as React.CSSProperties}
       >
         <div className="hero-promo-content">
           <h2 className="hero-promo-title">{currentPromo.title}</h2>

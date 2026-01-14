@@ -1,0 +1,38 @@
+/**
+ * Catalog Page Styles
+ */
+
+.catalog-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.catalog-page-header {
+  margin-bottom: 32px;
+}
+
+.catalog-page-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text, #000000);
+  margin: 0;
+}
+
+/* Мобильная версия */
+@media (max-width: 768px) {
+  .catalog-page {
+    padding: 16px;
+  }
+  
+  .catalog-page-header h1 {
+    font-size: 24px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .catalog-page-header h1 {
+    color: var(--color-text-dark, #ffffff);
+  }
+}

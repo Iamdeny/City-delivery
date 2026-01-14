@@ -1,6 +1,6 @@
 import { logger } from './logger';
 import { STORAGE_KEYS } from '../config/constants';
-import type { CartItem } from '../types/cart';
+import type { CartItem } from '../shared/types';
 
 export class StorageService {
   private static getCartKey(): string {

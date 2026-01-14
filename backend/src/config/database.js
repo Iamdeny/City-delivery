@@ -4,7 +4,23 @@
  */
 
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+
+// Загружаем .env из корня проекта (как в server.js)
+// Если не найден, пробуем backend/.env (для обратной совместимости)
+// database.js находится в backend/src/config/, поэтому корень проекта на 3 уровня вверх
+const rootEnvPath = path.join(__dirname, '..', '..', '..', '.env');
+const backendEnvPath = path.join(__dirname, '..', '..', '.env'); // backend/.env
+
+if (fs.existsSync(rootEnvPath)) {
+  require('dotenv').config({ path: rootEnvPath });
+} else if (fs.existsSync(backendEnvPath)) {
+  require('dotenv').config({ path: backendEnvPath });
+} else {
+  // Fallback на текущую директорию (backend/src/config/.env - маловероятно)
+  require('dotenv').config();
+}
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',

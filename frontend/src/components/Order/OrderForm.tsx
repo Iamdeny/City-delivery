@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { CartItem } from '../../types/cart';
+import type { CartItem } from '../../shared/types';
 import { logger } from '../../utils/logger';
 import { OrderResponse } from '../../services/orderService';
+import { PriceDisplay } from '../../shared/ui/PriceDisplay';
 import './OrderForm.css';
 
 interface OrderFormProps {
@@ -198,9 +199,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
       <div className='order-footer-modern'>
         <div className='order-total-modern'>
           <span className='order-total-label'>Итого</span>
-          <span className='order-total-amount-modern'>{totalAmount.toLocaleString('ru-RU')} ₽</span>
+          <span className='order-total-amount-modern'><PriceDisplay price={totalAmount} size="lg" /></span>
         </div>
-        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+        <form onSubmit={handleSubmit} className="order-form-full-width">
           <button
             type='submit'
             className='continue-btn-modern'

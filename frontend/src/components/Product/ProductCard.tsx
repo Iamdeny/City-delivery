@@ -1,6 +1,9 @@
-import React, { useMemo } from 'react';
-import type { Product } from '../../types/product';
+import React, { useMemo, useState, useEffect } from 'react';
+import type { Product } from '../../shared/types';
 import type { ProductComponentProps } from '../../types/common';
+import { useCartActions } from '../../shared/hooks/useCartActions';
+import { PriceDisplay } from '../../shared/ui/PriceDisplay';
+import { QuantityControls } from '../../shared/ui/QuantityControls';
 import './ProductCard.css';
 
 interface ProductCardProps extends ProductComponentProps {
@@ -10,19 +13,24 @@ interface ProductCardProps extends ProductComponentProps {
   discount?: number;
 }
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop';
+// Placeholder изображение (data URI) - всегда доступно, не требует интернета
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7Qn9C+0LvRg9GH0LjRgtGMINC/0LXRgNC10L3QuNC1PC90ZXh0Pjwvc3ZnPg==';
+
+// Функция для создания placeholder по категории
+const createCategoryPlaceholder = (category: string, color: string) => {
+  const text = encodeURIComponent(category.substring(0, 15));
+  return `https://via.placeholder.com/300x200/${color}/666666?text=${text}`;
+};
+
+// Используем placeholder.com как основной источник (более надежный чем Unsplash)
+const DEFAULT_IMAGE = createCategoryPlaceholder('Товар', 'E5E5E5');
 
 const CATEGORY_IMAGES: Record<string, string> = {
-  'Молочные продукты':
-    'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&h=200&fit=crop',
+  'Молочные продукты': createCategoryPlaceholder('Молочные', 'F0F8FF'),
   Бакалея: DEFAULT_IMAGE,
-  Колбасы:
-    'https://images.unsplash.com/photo-1589225521590-4c6c5a5c8b3e?w=300&h=200&fit=crop',
-  'Кофе/Чай':
-    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=300&h=200&fit=crop',
-  Напитки:
-    'https://images.unsplash.com/photo-1520342868574-5fa3804e551c?w=300&h=200&fit=crop',
+  Колбасы: createCategoryPlaceholder('Колбасы', 'FFF0F5'),
+  'Кофе/Чай': createCategoryPlaceholder('Кофе/Чай', 'F5F5DC'),
+  Напитки: createCategoryPlaceholder('Напитки', 'E0F2F1'),
 } as const;
 
 function ProductCard({ 
@@ -33,6 +41,8 @@ function ProductCard({
   onRemoveFromCart,
   discount
 }: ProductCardProps) {
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>('');
+
   // Мемоизируем изображение для оптимизации
   const productImage = useMemo(() => {
     if (product.image) {
@@ -41,36 +51,40 @@ function ProductCard({
     return CATEGORY_IMAGES[product.category] || DEFAULT_IMAGE;
   }, [product.image, product.category]);
 
+  // Инициализируем текущий источник изображения
+  useEffect(() => {
+    setCurrentImageSrc(productImage);
+  }, [productImage]);
+
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = DEFAULT_IMAGE;
-    e.currentTarget.alt = product.name;
-  };
-
-  const handleAddToCart = () => {
-    onAddToCart(product);
-  };
-
-  const handleRemove = () => {
-    if (onRemoveFromCart && cartQuantity > 0) {
-      onRemoveFromCart(product);
+    const img = e.currentTarget;
+    
+    // Если уже используем placeholder - не пытаемся снова
+    if (img.src === PLACEHOLDER_IMAGE || img.src.startsWith('data:')) {
+      return;
+    }
+    
+    // Переключаемся на data URI placeholder
+    if (currentImageSrc !== PLACEHOLDER_IMAGE) {
+      setCurrentImageSrc(PLACEHOLDER_IMAGE);
+      img.src = PLACEHOLDER_IMAGE;
+      img.alt = product.name;
     }
   };
 
-  const handleDecrement = () => {
-    if (onRemoveFromCart && cartQuantity > 0) {
-      onRemoveFromCart(product);
-    }
-  };
-
-  const handleIncrement = () => {
-    onAddToCart(product);
-  };
+  // Унифицированные обработчики через useCartActions (устранено 4 дубликата)
+  const { handleAddToCart, handleIncrement, handleDecrement } = useCartActions({
+    onAddToCart,
+    onRemoveFromCart,
+    product,
+    cartQuantity,
+  });
 
   return (
     <div className={`product-card ${isInCart ? 'in-cart' : ''}`}>
       <div className='product-image'>
         <img
-          src={productImage}
+          src={currentImageSrc || productImage}
           alt={product.name}
           loading='lazy'
           className='product-img'
@@ -96,31 +110,17 @@ function ProductCard({
         )}
 
         <div className='product-footer'>
-          <div className='product-price'>
-            {product.price.toLocaleString('ru-RU')} ₽
-          </div>
-
-          {/* Мобильная версия: кнопки +/- */}
+          <PriceDisplay price={product.price} discount={discount} size="md" />
+          
+          {/* Унифицированные quantity controls (устранено 3+ дубликата) */}
           {cartQuantity > 0 ? (
-            <div className='quantity-controls'>
-              <button
-                type='button'
-                className='quantity-btn minus-btn'
-                onClick={handleDecrement}
-                aria-label='Уменьшить количество'
-              >
-                −
-              </button>
-              <span className='quantity-value'>{cartQuantity}</span>
-              <button
-                type='button'
-                className='quantity-btn plus-btn'
-                onClick={handleIncrement}
-                aria-label='Увеличить количество'
-              >
-                +
-              </button>
-            </div>
+            <QuantityControls
+              quantity={cartQuantity}
+              onIncrement={handleIncrement}
+              onDecrement={handleDecrement}
+              size="md"
+              variant="default"
+            />
           ) : (
             <button
               type='button'

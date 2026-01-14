@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { SearchBar } from '../Search/SearchBar';
+import { PriceDisplay } from '../../shared/ui/PriceDisplay';
 import './Header.css';
 
 interface HeaderProps {
@@ -8,7 +9,6 @@ interface HeaderProps {
   totalAmount: number;
   loading: boolean;
   onRefreshProducts: () => void;
-  onRestoreCart: () => boolean;
   showNotification: (
     message: string,
     type: 'success' | 'error' | 'info'
@@ -16,8 +16,6 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   allCategories: string[];
-  storageCartCount: number;
-  cartLength: number;
   user: { name: string; email: string } | null;
   onLoginClick: () => void;
   onRegisterClick?: () => void;
@@ -31,25 +29,15 @@ function Header({
   totalAmount,
   loading,
   onRefreshProducts,
-  onRestoreCart,
   showNotification,
   onSearchChange,
   allCategories,
-  storageCartCount,
-  cartLength,
   user,
   onLoginClick,
   onRegisterClick,
   onLogout,
   onCartClick,
 }: HeaderProps) {
-  const handleRestoreClick = useCallback(() => {
-    if (onRestoreCart()) {
-      showNotification('Корзина восстановлена', 'success');
-    }
-  }, [onRestoreCart, showNotification]);
-
-  const shouldShowRestoreButton = storageCartCount > 0 && cartLength === 0;
 
   return (
     <header className='header header-modern'>
@@ -173,15 +161,6 @@ function Header({
               <span>Обновить</span>
             </button>
 
-            {shouldShowRestoreButton && (
-              <button
-                onClick={handleRestoreClick}
-                className='restore-btn-desktop'
-                aria-label='Восстановить корзину'
-              >
-                ♻️ Восстановить
-              </button>
-            )}
 
             <button
               className='cart-btn-desktop'
@@ -206,7 +185,7 @@ function Header({
                     {totalItems}
                   </span>
                   <span className='cart-total-desktop'>
-                    {totalAmount.toLocaleString('ru-RU')} ₽
+                    <PriceDisplay price={totalAmount} size="md" />
                   </span>
                 </>
               )}

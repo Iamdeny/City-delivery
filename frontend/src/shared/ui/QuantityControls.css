@@ -1,0 +1,102 @@
+/**
+ * Стили для унифицированного компонента QuantityControls
+ */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  background: var(--surface, #F8F9FA);
+  border-radius: var(--radius-sm, 12px);
+  padding: 4px;
+}
+
+.quantity-controls-sm {
+  gap: 2px;
+  padding: 2px;
+}
+
+.quantity-controls-md {
+  gap: 4px;
+  padding: 4px;
+}
+
+.quantity-controls-lg {
+  gap: 8px;
+  padding: 6px;
+}
+
+.quantity-controls-modern {
+  background: var(--surface-light, #FFFFFF);
+  border: 1px solid var(--border, #E2E8F0);
+}
+
+.quantity-controls-premium {
+  background: var(--primary-gradient, linear-gradient(135deg, #6366F1 0%, #EC4899 50%, #F97316 100%));
+  padding: 6px;
+}
+
+.quantity-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--surface-light, #FFFFFF);
+  border-radius: var(--radius-sm, 12px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast, 150ms);
+  color: var(--text-primary, #0F172A);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.quantity-btn-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.quantity-btn-md {
+  width: 32px;
+  height: 32px;
+}
+
+.quantity-btn-lg {
+  width: 40px;
+  height: 40px;
+}
+
+.quantity-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  box-shadow: 0 0 0 0;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-btn-minus {
+  color: var(--error, #EF4444);
+}
+
+.quantity-btn-plus {
+  color: var(--primary, #6366F1);
+}
+
+.quantity-value {
+  min-width: 24px;
+  text-align: center;
+  font-size: var(--font-size-base, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0F172A);
+}
+
+.quantity-controls-premium .quantity-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.quantity-controls-premium .quantity-value {
+  color: white;
+}
