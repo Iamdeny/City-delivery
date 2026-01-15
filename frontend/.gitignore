@@ -21,3 +21,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Окружение и секреты
+.env
+.env.local
+.env.*.local
+
+# Исключить все файлы .env, кроме примера (если он есть)
+.env*
+!.env.example
