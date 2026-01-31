@@ -1,0 +1,40 @@
+// scripts/simple-parse.js
+const puppeteer = require('puppeteer');
+
+async function getImageUrls(url) {
+  const browser = await puppeteer.launch({ headless: 'new' });
+  const page = await browser.newPage();
+  
+  await page.goto(url, { waitUntil: 'networkidle2' });
+  
+  // Получаем все URL изображений
+  const imageUrls = await page.evaluate(() => {
+    const urls = new Set();
+    
+    // Все img теги
+    document.querySelectorAll('img').forEach(img => {
+      if (img.src && !img.src.startsWith('data:')) {
+        urls.add(img.src);
+      }
+      if (img.dataset.src && !img.dataset.src.startsWith('data:')) {
+        urls.add(img.dataset.src);
+      }
+    });
+    
+    return Array.from(urls);
+  });
+  
+  await browser.close();
+  return imageUrls;
+}
+
+// Использование
+const url = 'https://sbermarket.ru'; // ← ВСТАВЬТЕ ССЫЛКУ ЗДЕСЬ
+
+getImageUrls(url).then(urls => {
+  console.log(`Найдено ${urls.length} изображений:`);
+  urls.forEach((url, i) => console.log(`${i + 1}. ${url}`));
+}).catch(console.error);
+
+
+

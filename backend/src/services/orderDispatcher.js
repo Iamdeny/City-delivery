@@ -15,7 +15,8 @@ class OrderDispatcher {
    */
   async checkDeliveryZone(clientLat, clientLng) {
     try {
-      // Сначала ищем склад в радиусе доставки
+      // Dark Store First:
+      // Order is only eligible if клиент находится в радиусе доставки хотя бы одного активного склада.
       const inRadiusResult = await query(
         `SELECT * FROM (
           SELECT 
@@ -33,6 +34,8 @@ class OrderDispatcher {
             )) AS distance
           FROM dark_stores
           WHERE is_active = true
+            AND latitude IS NOT NULL
+            AND longitude IS NOT NULL
         ) AS stores_with_distance
         WHERE distance <= delivery_radius / 1000
         ORDER BY distance
@@ -41,13 +44,17 @@ class OrderDispatcher {
       );
 
       if (inRadiusResult.rows.length > 0) {
+        const store = inRadiusResult.rows[0];
+        const distanceKm = Number.parseFloat(store.distance);
+        // Simple ETA heuristic: 10m base + 2m per km (can be replaced later).
+        const estimatedDeliveryTimeMin = Number.isFinite(distanceKm) ? Math.max(10, Math.round(10 + distanceKm * 2)) : 15;
         return {
           available: true,
-          store: inRadiusResult.rows[0],
+          store,
+          estimatedDeliveryTime: estimatedDeliveryTimeMin,
         };
       }
 
-      // Если не в радиусе, проверяем максимальное расстояние
       const nearestResult = await query(
         `SELECT 
           id, 
@@ -64,6 +71,8 @@ class OrderDispatcher {
           )) AS distance
         FROM dark_stores
         WHERE is_active = true
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
         ORDER BY distance
         LIMIT 1`,
         [clientLat, clientLng]
@@ -78,32 +87,22 @@ class OrderDispatcher {
 
       const nearestStore = nearestResult.rows[0];
       const distanceKm = parseFloat(nearestStore.distance);
-
-      // Если ближайший склад дальше максимального расстояния - отклоняем
-      if (distanceKm > deliveryConfig.MAX_DELIVERY_DISTANCE_KM) {
-        return {
-          available: false,
-          message: `Доставка недоступна. Вы находитесь слишком далеко от зоны обслуживания (${distanceKm.toFixed(1)} км). Максимальное расстояние доставки: ${deliveryConfig.MAX_DELIVERY_DISTANCE_KM} км`,
-          details: {
-            distance: distanceKm,
-            maxDistance: deliveryConfig.MAX_DELIVERY_DISTANCE_KM,
-            nearestStore: nearestStore.name,
-          },
-        };
-      }
-
-      // Если в пределах максимального расстояния, но вне радиуса склада - разрешаем с предупреждением
       return {
-        available: true,
-        store: nearestStore,
-        warning: `Ближайший склад находится на расстоянии ${distanceKm.toFixed(1)} км. Доставка может занять больше времени.`,
+        available: false,
+        message: `Доставка недоступна. Вы находитесь слишком далеко от ближайшего склада (${distanceKm.toFixed(1)} км). Радиус доставки склада: ${(Number(nearestStore.delivery_radius) / 1000).toFixed(1)} км`,
+        details: {
+          distance: distanceKm,
+          nearestStore: nearestStore.name,
+          nearestStoreId: nearestStore.id,
+          storeRadiusKm: Number(nearestStore.delivery_radius) / 1000,
+        },
       };
     } catch (error) {
       logger.error('Ошибка проверки зоны доставки:', error);
-      // В случае ошибки разрешаем заказ (можно изменить на false для строгой проверки)
+      // Строгая проверка: если не можем проверить зону — не создаём заказ.
       return {
-        available: true,
-        warning: 'Не удалось проверить зону доставки',
+        available: false,
+        message: 'Не удалось проверить зону доставки. Попробуйте позже.',
       };
     }
   }

@@ -72,15 +72,6 @@ router.get('/:paymentId/status', authenticate, async (req, res) => {
  */
 router.post('/webhook', async (req, res) => {
   try {
-    // В production: проверка IP whitelist и подписи
-    const signature = req.headers['x-yookassa-signature'];
-    
-    // TODO: Реализовать проверку подписи
-    // const isValid = paymentService.verifyWebhookSignature(req.body, signature);
-    // if (!isValid) {
-    //   return res.status(401).json({ error: 'Invalid signature' });
-    // }
-
     const result = await paymentService.handleWebhook(req.body);
 
     // ЮKassa ожидает 200 OK

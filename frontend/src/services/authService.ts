@@ -92,7 +92,7 @@ class AuthService {
       // Проверяем Content-Type перед парсингом JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
+        await response.text();
         throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
       }
 
@@ -145,7 +145,7 @@ class AuthService {
       // Проверяем Content-Type перед парсингом JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
+        await response.text();
         throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}. Проверьте, что backend запущен.`);
       }
 
@@ -284,7 +284,7 @@ class AuthService {
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
+        await response.text();
         throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
       }
 
@@ -329,7 +329,7 @@ class AuthService {
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
+        await response.text();
         throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
       }
 
@@ -456,7 +456,7 @@ class AuthService {
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
+        await response.text();
         throw new Error(`Сервер вернул не JSON ответ. Статус: ${response.status}`);
       }
 

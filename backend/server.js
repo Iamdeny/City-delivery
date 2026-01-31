@@ -12,6 +12,8 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const logger = require('./src/utils/logger');
+const { metrics, metricsMiddleware } = require('./src/utils/metrics');
 
 // Загружаем .env: сначала пробуем корень проекта, затем backend/.env
 const rootEnvPath = path.join(__dirname, '..', '.env');
@@ -28,18 +30,11 @@ if (fs.existsSync(backendEnvPath)) {
   require('dotenv').config();
 }
 
-// Импорт маршрутов
-const authRoutes = require('./src/routes/auth');
-const orderRoutes = require('./src/routes/orders');
-const productRoutes = require('./src/routes/products');
-const cartRoutes = require('./src/routes/cart'); // ✅ Phase 3: Smart Cart
-const trackingRoutes = require('./src/routes/tracking'); // ✅ Phase 3: Real-time Tracking
-const checkoutRoutes = require('./src/routes/checkout'); // ✅ Phase 4: Checkout Optimization
-// const paymentRoutes = require('./src/routes/payments');   // ✅ Payments: ЮKassa Integration
-// TODO: Добавить остальные маршруты
-// const courierRoutes = require('./src/routes/couriers');
-// const pickerRoutes = require('./src/routes/pickers');
-// const adminRoutes = require('./src/routes/admin');
+// Импорт модулей (модульный монолит)
+const { authRouter, createAdminUsersRouter } = require('./src/modules/users');
+const { createOrdersModule, createAdminOrdersRouter, cartRouter, trackingRouter, checkoutRouter } = require('./src/modules/orders');
+const { productsRouter, createInventoryGateway, createDarkStoresRouter, createInventoryRouter, createAdminDarkStoresRouter } = require('./src/modules/inventory');
+const { createAuditLogger, createAdminAuditRouter } = require('./src/modules/audit');
 
 // Импорт WebSocket обработчиков
 const setupWebSocket = require('./src/websocket/socketHandler');
@@ -130,13 +125,22 @@ app.use(cors(corsOptions));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
   max: 100, // максимум 100 запросов с одного IP
-  message: 'Слишком много запросов, попробуйте позже',
+  // In dev we often spam API (HMR, ops dashboards). Don't block developers.
+  skip: () => (process.env.NODE_ENV || 'development') !== 'production',
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      error: 'RATE_LIMITED',
+      message: 'Слишком много запросов, попробуйте позже',
+    });
+  },
 });
 app.use('/api/', limiter);
 
 // Парсинг JSON
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(metricsMiddleware);
 
 // ============ ROUTES ============
 
@@ -150,18 +154,28 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Metrics (MVP): in-memory JSON snapshot
+app.get('/api/metrics', (req, res) => {
+  res.json(metrics.snapshot());
+});
+
 // API маршруты
-app.use('/api/auth', authRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes); // ✅ Phase 3: Smart Cart
-app.use('/api/tracking', trackingRoutes); // ✅ Phase 3: Real-time Tracking
-app.use('/api/checkout', checkoutRoutes); // ✅ Phase 4: Checkout Optimization
-// app.use('/api/payments', paymentRoutes); // ✅ Payments: ЮKassa Integration
-// TODO: Добавить остальные маршруты
-// app.use('/api/couriers', courierRoutes);
-// app.use('/api/pickers', pickerRoutes);
-// app.use('/api/admin', adminRoutes);
+app.use('/api/auth', authRouter);
+const auditLogger = createAuditLogger();
+app.use('/api/admin', createAdminUsersRouter({ auditLogger }));
+
+const inventoryGateway = createInventoryGateway();
+const ordersModule = createOrdersModule({ inventoryGateway, queueService, auditLogger });
+app.use('/api/orders', ordersModule.ordersRouter);
+app.use('/api/admin', createAdminOrdersRouter({ inventoryGateway, queueService, auditLogger }));
+app.use('/api/admin', createAdminDarkStoresRouter({ auditLogger }));
+app.use('/api/admin', createAdminAuditRouter({ auditLogger }));
+app.use('/api/products', productsRouter);
+app.use('/api/dark-stores', createDarkStoresRouter());
+app.use('/api/inventory', createInventoryRouter());
+app.use('/api/cart', cartRouter); // ✅ Phase 3: Smart Cart
+app.use('/api/tracking', trackingRouter); // ✅ Phase 3: Real-time Tracking
+app.use('/api/checkout', checkoutRouter); // ✅ Phase 4: Checkout Optimization
 
 // Статика для изображений
 app.use('/uploads', express.static('uploads'));
@@ -176,7 +190,7 @@ app.use((req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  logger.error('Error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Внутренняя ошибка сервера',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
@@ -192,37 +206,37 @@ setupWebSocket(io);
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, async () => {
-  console.log(`🚀 Сервер запущен на порту ${PORT}`);
-  console.log(`📡 API доступно по адресу: http://localhost:${PORT}/api`);
-  console.log(`📡 WebSocket доступен на ws://localhost:${PORT}`);
-  console.log(`🌍 Окружение: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`🚀 Сервер запущен на порту ${PORT}`);
+  logger.info(`📡 API доступно по адресу: http://localhost:${PORT}/api`);
+  logger.info(`📡 WebSocket доступен на ws://localhost:${PORT}`);
+  logger.info(`🌍 Окружение: ${process.env.NODE_ENV || 'development'}`);
 
   // Настройка повторяющихся задач
   await queueService.setupRecurringJobs();
-  console.log(`⏰ Повторяющиеся задачи настроены`);
+  logger.info('⏰ Повторяющиеся задачи настроены');
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+  logger.info('SIGTERM signal received: closing HTTP server');
 
   // Закрываем очереди
   await queueService.close();
 
   server.close(() => {
-    console.log('HTTP server closed');
+    logger.info('HTTP server closed');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT signal received: closing HTTP server');
+  logger.info('SIGINT signal received: closing HTTP server');
 
   // Закрываем очереди
   await queueService.close();
 
   server.close(() => {
-    console.log('HTTP server closed');
+    logger.info('HTTP server closed');
     process.exit(0);
   });
 });

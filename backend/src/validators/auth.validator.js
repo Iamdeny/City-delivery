@@ -67,7 +67,8 @@ const validateRegister = (req, res, next) => {
   const result = registerSchema.safeParse(req.body);
 
   if (!result.success) {
-    const errors = result.error.errors.map((err) => ({
+    const issues = result.error?.issues || result.error?.errors || [];
+    const errors = issues.map((err) => ({
       field: err.path.join('.'),
       message: err.message,
     }));
@@ -94,7 +95,8 @@ const validateLogin = (req, res, next) => {
   const result = loginSchema.safeParse(req.body);
 
   if (!result.success) {
-    const errors = result.error.errors.map((err) => ({
+    const issues = result.error?.issues || result.error?.errors || [];
+    const errors = issues.map((err) => ({
       field: err.path.join('.'),
       message: err.message,
     }));
@@ -116,7 +118,8 @@ const validateRefreshToken = (req, res, next) => {
   const result = refreshTokenSchema.safeParse(req.body);
 
   if (!result.success) {
-    const errors = result.error.errors.map((err) => ({
+    const issues = result.error?.issues || result.error?.errors || [];
+    const errors = issues.map((err) => ({
       field: err.path.join('.'),
       message: err.message,
     }));

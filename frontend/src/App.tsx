@@ -1,9 +1,7 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { logRender } from './debug-renders';
 import { useProducts } from './hooks/useProducts';
 import { useCart } from './hooks/useCart';
 import { ProductSkeleton } from './components/Skeleton/ProductSkeleton';
-import { CartSkeleton } from './components/Skeleton/CartSkeleton';
 import { useProductFilters, SortOption } from './hooks/useProductFilters';
 import { useUrlFilters } from './hooks/useUrlFilters';
 import { useNotifications } from './hooks/useNotifications';
@@ -11,8 +9,6 @@ import HeaderPremium from './components/Header/HeaderPremium';
 import FiltersSidebar from './components/Filters/FiltersSidebar';
 import CategoryNav from './components/Navigation/CategoryNav';
 import ProductGrid from './components/Product/ProductGrid';
-import CartItems from './components/Cart/CartItems';
-import OrderForm from './components/Order/OrderForm';
 import CartModal from './components/Cart/CartModal';
 import NotificationContainer from './components/Notification/NotificationContainer';
 import { Breadcrumbs } from './components/Navigation/Breadcrumbs';
@@ -27,9 +23,6 @@ import { TIMEOUTS, BREAKPOINTS } from './config/constants';
 import './App.css';
 
 function App() {
-  // DEBUG: ВРЕМЕННО ОТКЛЮЧЕНО
-  // logRender('App');
-  
   // Состояние авторизации
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState<'login' | 'register' | false>(false);
@@ -106,6 +99,14 @@ function App() {
     activeFiltersCount,
   } = useProductFilters(productFiltersProps);
 
+  // Примитивы для dependency arrays (без сложных выражений)
+  const selectedCategoriesKey = useMemo(
+    () => selectedCategories.join(','),
+    [selectedCategories]
+  );
+  const selectedMinPrice = priceRange[0];
+  const selectedMaxPrice = priceRange[1];
+
   // Используем ref для стабильного callback
   const minPriceRef = useRef(minPrice);
   const maxPriceRef = useRef(maxPrice);
@@ -148,7 +149,6 @@ function App() {
   // Состояние для мобильных фильтров
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'cart' | 'profile'>('home');
   const [showCartModal, setShowCartModal] = useState(false);
 
   // Определяем тип устройства
@@ -230,8 +230,8 @@ function App() {
       syncUrlWithFilters({
         search: searchQuery,
         categories: selectedCategories,
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1],
+        minPrice: selectedMinPrice,
+        maxPrice: selectedMaxPrice,
         sort: sortOption,
       });
     }, TIMEOUTS.DEBOUNCE);
@@ -239,9 +239,9 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [
     searchQuery,
-    selectedCategories.join(','),
-    priceRange[0],
-    priceRange[1],
+    selectedCategories,
+    selectedMinPrice,
+    selectedMaxPrice,
     sortOption,
     isInitialized,
     syncUrlWithFilters,
@@ -290,9 +290,9 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     searchQuery,
-    selectedCategories.join(','),  // ← Массив → примитив!
-    priceRange[0],                  // ← Массив → примитивы!
-    priceRange[1],
+    selectedCategoriesKey,
+    selectedMinPrice,
+    selectedMaxPrice,
     minPrice,
     maxPrice,
     handleResetAllFilters,
@@ -319,14 +319,6 @@ function App() {
     productsCount: products.length,
     filteredProductsCount: filteredProducts.length,
   };
-
-  // Логирование только в development режиме (убрано - вызывало лишние ре-рендеры)
-  /* if (process.env.NODE_ENV === 'development') {
-    logger.log('📱 isMobile:', isMobile);
-    logger.log('🚪 mobileFiltersOpen:', mobileFiltersOpen);
-    logger.log('🏷️ Categories count:', allCategories?.length);
-    logger.log('📦 Products count:', products.length);
-  } */
 
   return (
     <div className='app'>
@@ -523,7 +515,6 @@ function App() {
         onShowNotification={showNotification}
         onGoToShopping={() => {
           setShowCartModal(false);
-          setActiveTab('home');
         }}
       />
 
@@ -535,7 +526,6 @@ function App() {
           estimatedTime='15 минут'
           onClick={() => {
             setShowCartModal(true);
-            setActiveTab('cart');
           }}
         />
       )}

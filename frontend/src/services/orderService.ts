@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import { API_CONFIG } from '../config/constants';
 import { authService } from './authService';
-import type { Order, OrderItem, DeliveryInfo } from '../types/order';
+import type { Order, DeliveryInfo } from '../types/order';
 
 export interface OrderData {
   phone: string;

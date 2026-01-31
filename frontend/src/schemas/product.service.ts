@@ -1,5 +1,6 @@
 import { productsResponseSchema } from '../schemas/product.schema';
 import type { Product } from '../shared/types';
+import { logger } from '../utils/logger';
 
 // Резервные данные из вашего кода
 const backupProducts: Product[] = [
@@ -18,7 +19,7 @@ const backupProducts: Product[] = [
 export class ProductService {
   async fetchProducts(): Promise<Product[]> {
     try {
-      console.log('🔄 Загрузка товаров...');
+      logger.log('🔄 Загрузка товаров...');
       const response = await fetch('http://localhost:5000/api/products', {
         headers: { Accept: 'application/json' },
       });
@@ -28,22 +29,22 @@ export class ProductService {
       }
 
       const data = await response.json();
-      console.log('📦 Получены данные:', data);
+      logger.log('📦 Получены данные:', data);
 
       // Валидация через Zod
       const result = productsResponseSchema.safeParse(data);
 
       if (result.success) {
-        console.log(`✅ Загружено ${result.data.length} товаров`);
+        logger.log(`✅ Загружено ${result.data.length} товаров`);
         return result.data;
       } else {
-        console.warn('⚠️ Валидация не прошла:', result.error);
+        logger.warn('⚠️ Валидация не прошла:', result.error);
 
         // Если валидация не прошла, пробуем адаптировать
         return this.adaptData(data);
       }
     } catch (error) {
-      console.error('❌ Ошибка загрузки:', error);
+      logger.error('❌ Ошибка загрузки:', error);
       throw error;
     }
   }
@@ -62,7 +63,7 @@ export class ProductService {
     }
 
     // Если не массив, используем резервные данные
-    console.warn('⚠️ Неподдерживаемый формат, используем резервные данные');
+    logger.warn('⚠️ Неподдерживаемый формат, используем резервные данные');
     return backupProducts;
   }
 

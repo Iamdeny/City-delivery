@@ -133,11 +133,6 @@ export const useProductFilters = ({ products }: UseProductFiltersProps) => {
     // Фильтрация по поисковому запросу (только если есть запрос)
     if (filters.searchQuery.trim()) {
       const query = filters.searchQuery.toLowerCase().trim();
-      // Используем Set для быстрой проверки категорий
-      const categorySet = new Set(
-        result.map((p) => p.category.toLowerCase())
-      );
-      const hasCategoryMatch = categorySet.has(query);
 
       result = result.filter((product) => {
         const nameMatch = product.name.toLowerCase().includes(query);
@@ -185,9 +180,8 @@ export const useProductFilters = ({ products }: UseProductFiltersProps) => {
   }, [
     products,
     filters.searchQuery,
-    filters.selectedCategories.join(','),
-    filters.priceRange[0],
-    filters.priceRange[1],
+    filters.selectedCategories,
+    filters.priceRange,
     filters.sortOption,
   ]);
 
@@ -202,9 +196,8 @@ export const useProductFilters = ({ products }: UseProductFiltersProps) => {
     );
   }, [
     filters.searchQuery,
-    filters.selectedCategories.length,
-    filters.priceRange[0],
-    filters.priceRange[1],
+    filters.selectedCategories,
+    filters.priceRange,
     filters.sortOption,
     minPrice,
     maxPrice,
@@ -221,9 +214,8 @@ export const useProductFilters = ({ products }: UseProductFiltersProps) => {
     return count;
   }, [
     filters.searchQuery,
-    filters.selectedCategories.length,
-    filters.priceRange[0],
-    filters.priceRange[1],
+    filters.selectedCategories,
+    filters.priceRange,
     filters.sortOption,
     minPrice,
     maxPrice,
@@ -240,35 +232,17 @@ export const useProductFilters = ({ products }: UseProductFiltersProps) => {
     };
   }, [
     filters.searchQuery,
-    filters.selectedCategories.join(','),
-    filters.priceRange[0],
-    filters.priceRange[1],
+    filters.selectedCategories,
+    filters.priceRange,
     filters.sortOption,
   ]);
-
-  // Мемоизируем массивы чтобы ссылки не менялись
-  const memoizedSelectedCategories = useMemo(
-    () => filters.selectedCategories,
-    [filters.selectedCategories.join(',')]
-  );
-  
-  const memoizedPriceRange = useMemo(
-    () => filters.priceRange as [number, number],
-    [filters.priceRange[0], filters.priceRange[1]]
-  );
-
-  // Мемоизируем строковое представление allCategories для стабильности
-  const allCategoriesKey = useMemo(
-    () => allCategories.join(','),
-    [allCategories] // ← Зависимость от массива, но сравниваем по содержимому
-  );
 
   // Мемоизируем возвращаемый объект чтобы избежать бесконечного цикла
   return useMemo(() => ({
     // Текущие значения фильтров
     searchQuery: filters.searchQuery,
-    selectedCategories: memoizedSelectedCategories,
-    priceRange: memoizedPriceRange,
+    selectedCategories: filters.selectedCategories,
+    priceRange: filters.priceRange,
     sortOption: filters.sortOption,
 
     // Вычисленные значения
@@ -291,16 +265,16 @@ export const useProductFilters = ({ products }: UseProductFiltersProps) => {
     setFiltersFromUrl,
   }), [
     filters.searchQuery,
-    memoizedSelectedCategories,
-    memoizedPriceRange,
+    filters.selectedCategories,
+    filters.priceRange,
     filters.sortOption,
     minPrice,
     maxPrice,
-    allCategoriesKey,  // ← Используем строковое представление для стабильности!
-    filteredProducts.length,  // ← Массив → длина!
+    allCategories,
+    filteredProducts,
     hasActiveFilters,
     activeFiltersCount,
-    // urlFilterState не включаем - он вычисляется из тех же полей
+    urlFilterState,
     setSearchQuery,
     setSelectedCategories,
     setPriceRange,

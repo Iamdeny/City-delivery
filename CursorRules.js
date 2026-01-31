@@ -273,4 +273,262 @@ module.exports = {
       'Игнорировать real‑time, если флоу связан с заказами, статусами или деньгами.',
     ],
   },
+
+  // Правила миграции frontend → frontend-next
+  migration: {
+    from: 'frontend/ (Create React App + React 19)',
+    to: 'frontend-next/ (Next.js 15 + App Router)',
+    
+    // Стратегия миграции
+    strategy: {
+      approach: 'incremental', // Постепенная миграция, не big bang
+      parallel: true, // Старый и новый фронтенд работают параллельно
+      testBeforeRemove: true, // Удалять старый код только после проверки нового
+    },
+
+    // Правила для компонентов
+    componentRules: [
+      {
+        step: 1,
+        title: 'Анализ зависимостей',
+        rules: [
+          'Перед миграцией компонента проанализировать все его зависимости (hooks, utils, services, types).',
+          'Мигрировать зависимости перед компонентом (снизу вверх).',
+          'Создать карту зависимостей: компонент → хуки → утилиты → типы → сервисы.',
+        ],
+      },
+      {
+        step: 2,
+        title: 'Структура файлов',
+        rules: [
+          'frontend/src/components/ → frontend-next/app/components/',
+          'frontend/src/hooks/ → frontend-next/app/hooks/',
+          'frontend/src/shared/lib/ → frontend-next/lib/',
+          'frontend/src/shared/types/ → frontend-next/types/',
+          'frontend/src/services/ → frontend-next/app/services/ (или API routes)',
+        ],
+      },
+      {
+        step: 3,
+        title: 'Client vs Server Components',
+        rules: [
+          'По умолчанию Server Component (без "use client").',
+          'Добавлять "use client" только если: useState, useEffect, event handlers, браузерные API, framer-motion.',
+          'Разделять на Server (данные) и Client (интерактивность) части компонента.',
+        ],
+      },
+      {
+        step: 4,
+        title: 'Стилизация',
+        rules: [
+          'Удалять CSS модули и CSS файлы.',
+          'Заменять на Tailwind классы.',
+          'Использовать shadcn/ui компоненты вместо кастомных (Button, Card, Input, Dialog и т.д.).',
+          'Сохранять существующую функциональность и UX.',
+        ],
+      },
+      {
+        step: 5,
+        title: 'Роутинг',
+        rules: [
+          'React Router → Next.js App Router (file-based routing).',
+          'useNavigate() → router.push() из next/navigation.',
+          'useParams() → params из Server Component или useParams() из next/navigation.',
+          'useSearchParams() → searchParams из Server Component или useSearchParams() из next/navigation.',
+        ],
+      },
+      {
+        step: 6,
+        title: 'Data Fetching',
+        rules: [
+          'useEffect + fetch → Server Components с async/await или Server Actions.',
+          'TanStack Query → оставить для Client Components, но предпочитать Server Components где возможно.',
+          'API вызовы → Next.js API Routes (app/api/) для проксирования к существующему backend.',
+        ],
+      },
+      {
+        step: 7,
+        title: 'State Management',
+        rules: [
+          'Zustand → оставить для глобального состояния (корзина, auth).',
+          'Локальный state → useState (Client Components) или Server Components с props.',
+          'URL state → searchParams и router.push() вместо локального state где возможно.',
+        ],
+      },
+    ],
+
+    // Правила для утилит и библиотек
+    utilityRules: [
+      {
+        category: 'formatting',
+        from: 'frontend/src/shared/lib/format.ts',
+        to: 'frontend-next/lib/format.ts',
+        rules: [
+          'Копировать как есть, без изменений (чистые функции).',
+          'Экспортировать именованные функции, не default.',
+        ],
+      },
+      {
+        category: 'types',
+        from: 'frontend/src/shared/types/',
+        to: 'frontend-next/types/',
+        rules: [
+          'Копировать типы как есть.',
+          'Убедиться, что типы совместимы с Next.js (нет React Router типов).',
+        ],
+      },
+      {
+        category: 'constants',
+        from: 'frontend/src/config/constants.ts',
+        to: 'frontend-next/lib/constants.ts',
+        rules: [
+          'Адаптировать BASE_URL под Next.js (process.env.NEXT_PUBLIC_API_URL).',
+          'Сохранить структуру ENDPOINTS, TIMEOUTS, STORAGE_KEYS.',
+        ],
+      },
+    ],
+
+    // Правила для API интеграции
+    apiRules: [
+      {
+        step: 1,
+        title: 'Временное решение',
+        rules: [
+          'Создать Next.js API Routes (app/api/*/route.ts) для проксирования к существующему backend.',
+          'Использовать fetch с next: { revalidate } для кэширования.',
+          'Сохранить существующие endpoints без изменений.',
+        ],
+      },
+      {
+        step: 2,
+        title: 'Долгосрочное решение',
+        rules: [
+          'После миграции всех компонентов внедрить tRPC для end-to-end типизации.',
+          'Или GraphQL Codegen, если tRPC не подходит.',
+        ],
+      },
+    ],
+
+    // Чеклист для каждого компонента
+    checklist: [
+      '✅ Проанализированы все зависимости компонента',
+      '✅ Зависимости мигрированы перед компонентом',
+      '✅ Компонент разделён на Server и Client части (если нужно)',
+      '✅ CSS модули заменены на Tailwind',
+      '✅ Использованы shadcn/ui компоненты где возможно',
+      '✅ Роутинг адаптирован под App Router',
+      '✅ Data fetching переведён на Server Components или API Routes',
+      '✅ Типы проверены и обновлены',
+      '✅ Компонент протестирован в изоляции',
+      '✅ Компонент интегрирован в страницу/роут',
+    ],
+
+    // Порядок миграции (от простого к сложному)
+    migrationOrder: [
+      {
+        phase: 1,
+        name: 'Утилиты и типы',
+        items: ['lib/format.ts', 'types/*.ts', 'lib/constants.ts'],
+        priority: 'high',
+      },
+      {
+        phase: 2,
+        name: 'Простые UI компоненты',
+        items: ['PriceDisplay', 'QuantityControls', 'Badge', 'Button'],
+        priority: 'high',
+      },
+      {
+        phase: 3,
+        name: 'Хуки',
+        items: ['useCartActions', 'useProductFilters', 'useAuth'],
+        priority: 'high',
+      },
+      {
+        phase: 4,
+        name: 'Сложные компоненты',
+        items: ['ProductCardPremium', 'ProductGrid', 'FiltersSidebar'],
+        priority: 'medium',
+      },
+      {
+        phase: 5,
+        name: 'Формы',
+        items: ['LoginForm', 'OrderForm'],
+        priority: 'medium',
+      },
+      {
+        phase: 6,
+        name: 'Модальные окна',
+        items: ['CartModal', 'AuthModal'],
+        priority: 'medium',
+      },
+      {
+        phase: 7,
+        name: 'Страницы',
+        items: ['ProductsPage', 'CartPage', 'OrderPage'],
+        priority: 'low',
+      },
+      {
+        phase: 8,
+        name: 'API Routes',
+        items: ['app/api/products/route.ts', 'app/api/orders/route.ts', 'app/api/auth/route.ts'],
+        priority: 'high',
+      },
+    ],
+
+    // Важные замечания
+    warnings: [
+      'Не удалять старый код до полной проверки нового.',
+      'Тестировать каждый компонент в изоляции перед интеграцией.',
+      'Сохранять существующую функциональность и UX.',
+      'Документировать изменения в процессе миграции.',
+      'Использовать TypeScript strict mode для выявления проблем.',
+    ],
+
+    // Правила обновления документации
+    documentation: {
+      required: true,
+      files: [
+        'frontend-next/README.md',
+        'frontend-next/PHASE_CHECKLIST.md',
+      ],
+      rules: [
+        'После любых изменений в frontend-next/ ОБЯЗАТЕЛЬНО обновлять README.md и PHASE_CHECKLIST.md.',
+        'В README.md обновлять секцию "Статус миграции" с новыми файлами и изменениями.',
+        'В PHASE_CHECKLIST.md обновлять соответствующий раздел фазы с деталями изменений, исправлений и результатов проверок.',
+        'Добавлять информацию о новых файлах, исправленных ошибках, предупреждениях ESLint.',
+        'Обновлять дату "Последнее обновление" в PHASE_CHECKLIST.md.',
+        'Если созданы новые утилиты или зависимости, документировать их в README.md.',
+        'Если исправлены критические ошибки, добавить их в раздел "Исправления" соответствующей фазы.',
+      ],
+      when: [
+        'После завершения каждой фазы миграции',
+        'После исправления ошибок или предупреждений',
+        'После добавления новых файлов или компонентов',
+        'После изменения структуры проекта',
+        'После обновления зависимостей',
+      ],
+    },
+
+    // Правила использования UI референсов
+    uiReferences: {
+      path: 'frontend-next/design/',
+      structure: {
+        cart: 'frontend-next/design/cart/',
+        products: 'frontend-next/design/products/',
+        forms: 'frontend-next/design/forms/',
+        general: 'frontend-next/design/general/',
+      },
+      rules: [
+        'Перед разработкой/миграцией компонента ПРОВЕРЯТЬ наличие референсов в frontend-next/design/',
+        'Если есть скриншоты UI в frontend-next/design/, использовать их как основу для разработки',
+        'Адаптировать дизайн из референсов под Tailwind CSS, сохраняя визуальную идентичность',
+        'Сохранять все UX паттерны, анимации и интерактивность из референсов',
+        'Если референсов нет, использовать существующий дизайн компонента как основу',
+        'При расхождении между референсом и текущим кодом - приоритет у референса',
+        'Документировать использование референсов в комментариях компонента',
+      ],
+      fileFormats: ['png', 'jpg', 'jpeg', 'webp'],
+      naming: 'kebab-case (например: cart-modal-desktop.png)',
+    },
+  },
 };

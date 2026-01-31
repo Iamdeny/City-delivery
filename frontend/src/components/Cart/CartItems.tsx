@@ -1,6 +1,5 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import type { CartItem } from '../../shared/types';
-import { formatPrice } from '../../shared/lib/format';
 import { PriceDisplay } from '../../shared/ui/PriceDisplay';
 import { QuantityControls } from '../../shared/ui/QuantityControls';
 import './CartItems.css';
@@ -32,11 +31,6 @@ function CartItems({
       onUpdateQuantity(id, currentQuantity + 1);
     },
     [onUpdateQuantity]
-  );
-
-  const formattedTotal = useMemo(
-    () => formatPrice(totalAmount),
-    [totalAmount]
   );
 
   if (items.length === 0) {

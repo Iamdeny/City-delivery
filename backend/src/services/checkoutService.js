@@ -82,10 +82,22 @@ class CheckoutService {
           quantity: item.quantity
         }));
 
-        // Use darkStoreId from zone check if available, otherwise use default
-        const storeId = darkStoreId || 1;
+        // Dark Store First: inventory must be checked against the selected store from delivery zone.
+        if (!darkStoreId) {
+          issues.push({
+            type: 'STORE_NOT_SELECTED',
+            severity: 'error',
+            message: 'Не удалось выбрать склад для доставки',
+          });
+          return {
+            valid: false,
+            issues,
+            estimatedTotal: 0,
+            estimatedDeliveryTime: null,
+          };
+        }
 
-        const availabilityCheck = await inventoryService.checkAvailability(items, storeId);
+        const availabilityCheck = await inventoryService.checkAvailability(items, darkStoreId);
 
         if (!availabilityCheck.available) {
           issues.push({
@@ -213,7 +225,7 @@ class CheckoutService {
       const reservation = await inventoryService.reserve(
         items,
         userId,
-        validation.darkStoreId || 1
+        validation.darkStoreId
       );
 
       if (!reservation.success) {

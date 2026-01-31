@@ -229,7 +229,6 @@
 
       // Отслеживаем ошибки загрузки
       window.addEventListener('error', function (e) {
-        console.error('Ошибка загрузки приложения:', e.error);
         var rootElement = document.getElementById('root');
         if (rootElement) {
           rootElement.innerHTML =
@@ -246,8 +245,6 @@
         // Эта функция будет переопределена в LoginForm через window.handleTelegramAuth
         if (window.handleTelegramAuth && typeof window.handleTelegramAuth === 'function') {
           window.handleTelegramAuth(user);
-        } else {
-          console.warn('Telegram auth callback не настроен. Убедитесь, что LoginForm загружен.');
         }
       };
     </script>

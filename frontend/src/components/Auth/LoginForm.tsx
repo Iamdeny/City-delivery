@@ -6,9 +6,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { authService, type LoginCredentials, type RegisterData, type TelegramAuthData } from '../../services/authService';
+import { authService, type LoginCredentials, type RegisterData } from '../../services/authService';
 import { logger } from '../../utils/logger';
-import { formatPhone, validatePhone, handlePhoneChange } from '../../utils/phoneMask';
+import { validatePhone, handlePhoneChange } from '../../utils/phoneMask';
 import './LoginForm.css';
 
 interface LoginFormProps {
@@ -31,7 +31,6 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
   // Phone/OTP поля
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
   const [otpCountdown, setOtpCountdown] = useState(0);
   
   // Общие состояния
@@ -50,7 +49,6 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
   // Сброс состояния при смене метода
   useEffect(() => {
     setError(null);
-    setOtpSent(false);
     setOtpCode('');
     setStep('input');
     setOtpCountdown(0);
@@ -68,7 +66,6 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
 
     try {
       await authService.sendPhoneOTP(phone);
-      setOtpSent(true);
       setStep('otp');
       setOtpCountdown(60); // 60 секунд до повторной отправки
       logger.log('✅ OTP код отправлен');
@@ -294,7 +291,6 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                       onClick={() => {
                         setStep('input');
                         setOtpCode('');
-                        setOtpSent(false);
                       }}
                     >
                       Изменить номер
@@ -436,7 +432,6 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
               setIsLogin(!isLogin);
               setError(null);
               setStep('input');
-              setOtpSent(false);
               setOtpCode('');
             }}
             className="login-switch-btn"

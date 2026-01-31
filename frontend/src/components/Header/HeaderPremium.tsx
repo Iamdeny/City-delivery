@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { SearchBar } from '../Search/SearchBar';
 import { PriceDisplay } from '../../shared/ui/PriceDisplay';
 import './HeaderPremium.css';
@@ -38,8 +38,8 @@ const HeaderPremium: React.FC<HeaderPremiumProps> = ({
   onAddressClick,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [prevCartItems, setPrevCartItems] = useState(totalItems);
   const [cartPulse, setCartPulse] = useState(false);
+  const prevCartItemsRef = useRef(totalItems);
 
   // Отслеживание скролла для sticky header (обычный scroll listener)
   useEffect(() => {
@@ -53,12 +53,13 @@ const HeaderPremium: React.FC<HeaderPremiumProps> = ({
 
   // Pulse анимация при изменении корзины
   useEffect(() => {
-    if (totalItems > prevCartItems) {
+    const prev = prevCartItemsRef.current;
+    if (totalItems > prev) {
       setCartPulse(true);
       setTimeout(() => setCartPulse(false), 600);
     }
-    setPrevCartItems(totalItems);
-  }, [totalItems]); // Убрали prevCartItems из зависимостей
+    prevCartItemsRef.current = totalItems;
+  }, [totalItems]);
 
 
   return (

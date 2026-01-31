@@ -28,6 +28,11 @@ const createOrderSchema = z.object({
     .array(orderItemSchema)
     .min(1, 'Корзина не может быть пустой')
     .max(50, 'Максимальное количество товаров в заказе: 50'),
+  darkStoreId: z
+    .number()
+    .int('ID склада должен быть целым числом')
+    .positive('ID склада должен быть положительным числом')
+    .optional(),
   address: z
     .string()
     .min(10, 'Адрес должен быть не менее 10 символов')
@@ -96,8 +101,9 @@ const validateCreateOrder = (req, res, next) => {
 
   if (!result.success) {
     let errors = [];
-    if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
-      errors = result.error.errors.map((err) => ({
+    const issues = result.error?.issues || result.error?.errors;
+    if (issues && Array.isArray(issues)) {
+      errors = issues.map((err) => ({
         field: (err.path && Array.isArray(err.path) ? err.path.join('.') : 'unknown') || 'unknown',
         message: err.message || 'Ошибка валидации',
       }));
@@ -130,8 +136,9 @@ const validateUpdateOrderStatus = (req, res, next) => {
 
   if (!result.success) {
     let errors = [];
-    if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
-      errors = result.error.errors.map((err) => ({
+    const issues = result.error?.issues || result.error?.errors;
+    if (issues && Array.isArray(issues)) {
+      errors = issues.map((err) => ({
         field: (err.path && Array.isArray(err.path) ? err.path.join('.') : 'unknown') || 'unknown',
         message: err.message || 'Ошибка валидации',
       }));

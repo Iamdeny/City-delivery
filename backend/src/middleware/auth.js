@@ -4,8 +4,12 @@
 
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/database');
+const logger = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required. Please set it in your .env file.');
+}
 
 /**
  * Проверка JWT токена
@@ -46,7 +50,7 @@ const authenticate = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Токен истек' });
     }
-    console.error('Auth error:', error);
+    logger.error('Auth error:', error);
     return res.status(500).json({ error: 'Ошибка авторизации' });
   }
 };

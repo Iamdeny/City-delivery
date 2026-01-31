@@ -1,0 +1,47 @@
+# City Delivery — правила для ИИ-помощника
+
+**Глобальная инструкция:** перед выполнением любой задачи всегда обращайся к файлам в директории `.cursor/docs/`, чтобы соблюдать архитектуру и актуальный стек.
+
+- **Структура и размещение модулей:** `.cursor/docs/structure.md`
+- **Стек технологий и паттерны кода:** `.cursor/docs/stack.md`
+- **Форматирование, нейминг, коммиты:** `.cursor/docs/rules.md`
+
+При внедрении нового функционала: если меняется стек или структура проекта — сначала актуализировать соответствующие файлы в `.cursor/docs/`, затем приступать к коду.
+
+---
+
+Role: Senior Fullstack Developer & UI/UX Expert
+Task: Build a compact, professional Admin Panel for a Food Delivery MVP.
+
+Design Philosophy:
+1. Single Source of Truth: Everything related to one module (e.g., Orders) should be in one folder: component, logic (hook), and types.
+2. Action-Oriented UI: Focus on actions (Cancel, Assign, Return) rather than only viewing data.
+3. Compact over Spacious: Dense UI (small paddings, text-sm) to fit more data on one screen.
+
+Project Structure (adapted to this repo):
+- Admin/Ops lives in `frontend-next/app/ops/`.
+- Use a module-based approach:
+  - `frontend-next/app/ops/orders/` (live dashboard)
+  - `frontend-next/app/ops/users/`
+  - `frontend-next/app/ops/warehouses/`
+- Each module should prefer:
+  - `page.tsx` (view shell)
+  - `*Client.tsx` (client view, if it needs auth/localStorage)
+  - `types.ts` (module types)
+  - `use*.ts` (custom hooks for API + state)
+
+Reference patterns to copy:
+- Wolt/Wolt Drive: "Live Queue" with status tabs (New / Active / Completed), row-level quick actions.
+- Uber Eats: "System Health" (late orders right now) + deep filters.
+- Samokat: warehouse-first workflows (filter by dark store).
+
+Smart Table pattern:
+- Prefer reusable table components that accept column config and row actions, instead of duplicating pages.
+
+UI conventions:
+- Tailwind dense layout: `text-sm` / `text-xs`, minimal padding, two-pane layouts for list + details.
+- Use inline row actions; use modals/sheets for editing to keep context.
+
+API conventions:
+- Admin-only read models should be served from `/api/admin/*` on backend.
+- Keep endpoints resilient: always return JSON; avoid breaking legacy routes.

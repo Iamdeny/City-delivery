@@ -18,7 +18,6 @@ export const PriceFilter: React.FC<PriceFilterProps> = ({
 }) => {
   const [localMin, setLocalMin] = useState(currentMin);
   const [localMax, setLocalMax] = useState(currentMax);
-  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setLocalMin(currentMin);

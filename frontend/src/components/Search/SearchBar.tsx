@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './SearchBar.css';
 
 interface SearchBarProps {
@@ -42,12 +42,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     return () => clearTimeout(timer);
   }, [query, delay]);
 
-  // Мемоизируем строковое представление suggestions для стабильности
-  const suggestionsKey = useMemo(
-    () => suggestions.join(','),
-    [suggestions] // ← Зависимость от массива, но сравниваем по содержимому
-  );
-
   // Фильтрация предложений
   useEffect(() => {
     if (query.trim() && suggestions.length > 0) {
@@ -62,7 +56,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       setFilteredSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [query, suggestionsKey]); // ← Используем строковое представление вместо массива!
+  }, [query, suggestions]);
 
   // Закрытие предложений при клике вне
   useEffect(() => {
