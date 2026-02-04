@@ -60,7 +60,7 @@ const CartModal: React.FC<CartModalProps> = ({
   const [deliveryPickerOpen, setDeliveryPickerOpen] = useState(false);
   const [deliveryStatus, setDeliveryStatus] = useState<CartDeliveryStatus>({ ok: null, message: null });
   const [deliveryAddress, setDeliveryAddress] = useState('Выберите адрес');
-  const [deliveryTime, setDeliveryTime] = useState('30 минут');
+  const [deliveryTime, setDeliveryTime] = useState('15 мин');
   const contentScrollRef = useRef<HTMLDivElement>(null);
 
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -132,7 +132,7 @@ const CartModal: React.FC<CartModalProps> = ({
       const addr = localStorage.getItem('cd_address') || 'Выберите адрес';
       setDeliveryAddress(addr);
       // TODO: Получить реальное время доставки из API
-      setDeliveryTime('30 минут');
+      setDeliveryTime('15 мин');
     } catch {
       // ignore
     }
@@ -142,7 +142,7 @@ const CartModal: React.FC<CartModalProps> = ({
   useEffect(() => {
     if (deliveryStatus.ok === true) {
       // TODO: Получить реальное время доставки из API
-      setDeliveryTime('30 минут');
+      setDeliveryTime('15 мин');
     }
   }, [deliveryStatus.ok]);
 
@@ -173,23 +173,37 @@ const CartModal: React.FC<CartModalProps> = ({
               if (info.offset.x > 120 || info.velocity.x > 900) onClose();
             }}
           >
-            {/* Header в стиле Самоката */}
+            {/* Header Banani: Корзина + Очистить */}
             <div className="px-4 pt-[calc(var(--safe-top)+12px)] pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <div className="flex items-center justify-between mb-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-9 h-9 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center active:scale-95 transition-transform"
-                  aria-label="Закрыть корзину"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
               <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="text-base font-bold text-gray-800 truncate">{deliveryAddress}</div>
-                  <div className="text-sm font-medium text-gray-600 mt-0.5">Доставка {deliveryTime}</div>
+                <h2 className="text-[20px] font-extrabold text-[#1a1a1a]">
+                  Корзина
+                </h2>
+                <div className="flex items-center gap-2">
+                  {hasItems && (
+                    <button
+                      type="button"
+                      onClick={onClearCart}
+                      className="text-[14px] font-semibold text-[#5a5a5a] active:opacity-70"
+                    >
+                      Очистить
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-9 h-9 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center active:scale-95 transition-transform"
+                    aria-label="Закрыть корзину"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
+              </div>
+              {/* Карточка доставки: Самокат + время */}
+              <div className="mt-2 flex items-center gap-2 rounded-2xl bg-[#f5f5f5] px-3 py-2">
+                <span className="text-lg" aria-hidden>🛵</span>
+                <span className="text-[15px] font-semibold text-[#1a1a1a]">Самокат</span>
+                <span className="text-[13px] text-[#5a5a5a]">{deliveryTime}</span>
               </div>
             </div>
 
@@ -219,8 +233,44 @@ const CartModal: React.FC<CartModalProps> = ({
                     totalAmount={totalAmount}
                     totalItems={totalItems}
                   />
+
+                  {/* Советуем (Banani) */}
+                  <div className="px-4 py-3 border-t border-gray-100">
+                    <h3 className="text-[15px] font-semibold text-[#1a1a1a] mb-2">
+                      Советуем
+                    </h3>
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                      <button
+                        type="button"
+                        className="flex-shrink-0 w-[120px] rounded-2xl bg-[#f5f5f5] p-2 text-left active:scale-[0.98]"
+                      >
+                        <div className="w-full h-14 rounded-xl bg-gray-200 mb-1.5" />
+                        <div className="text-[12px] font-semibold text-[#1a1a1a] truncate">Вода</div>
+                        <div className="text-[11px] text-[#5a5a5a]">39 ₽</div>
+                        <div className="mt-1 text-[11px] font-semibold text-[#ff4d6a]">+ Добавить</div>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-shrink-0 w-[120px] rounded-2xl bg-[#f5f5f5] p-2 text-left active:scale-[0.98]"
+                      >
+                        <div className="w-full h-14 rounded-xl bg-gray-200 mb-1.5" />
+                        <div className="text-[12px] font-semibold text-[#1a1a1a] truncate">Жвачка</div>
+                        <div className="text-[11px] text-[#5a5a5a]">29 ₽</div>
+                        <div className="mt-1 text-[11px] font-semibold text-[#ff4d6a]">+ Добавить</div>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-shrink-0 w-[120px] rounded-2xl bg-[#f5f5f5] p-2 text-left active:scale-[0.98]"
+                      >
+                        <div className="w-full h-14 rounded-xl bg-gray-200 mb-1.5" />
+                        <div className="text-[12px] font-semibold text-[#1a1a1a] truncate">Чипсы</div>
+                        <div className="text-[11px] text-[#5a5a5a]">85 ₽</div>
+                        <div className="mt-1 text-[11px] font-semibold text-[#ff4d6a]">+ Добавить</div>
+                      </button>
+                    </div>
+                  </div>
                   
-                  {/* Секции промокодов и бонусов в стиле Самоката */}
+                  {/* Секции промокодов и бонусов */}
                   <div className="px-4 py-3 space-y-3 border-t border-gray-100">
                     {/* Скидка или промокод */}
                     <button

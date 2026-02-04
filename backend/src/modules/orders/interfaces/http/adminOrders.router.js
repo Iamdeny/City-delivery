@@ -1,24 +1,36 @@
 /**
  * Admin Orders HTTP interface.
- * GET /api/admin/orders (live dashboard)
+ * GET /api/admin/orders (live dashboard), PATCH /api/admin/orders/:id/assign-courier
  */
 
 const express = require('express');
+const { z } = require('zod');
 const { authenticate, requireRole } = require('../../../../middleware/auth');
 
-function parseIntParam(value, fallback) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.floor(n);
-}
+/** Zod: GET /api/admin/orders query (live dashboard) */
+const listLiveOrdersQuerySchema = z.object({
+  darkStoreId: z.coerce.number().int().positive().optional(),
+  tab: z.enum(['new', 'active', 'completed', 'all']).optional(),
+  needsCourier: z
+    .union([z.literal('1'), z.literal('0'), z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === '1' || (v && v.toLowerCase() === 'true')),
+  problematic: z
+    .union([z.literal('1'), z.literal('0'), z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === '1' || (v && v.toLowerCase() === 'true')),
+  q: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
-function parseBoolParam(value) {
-  if (value === undefined) return undefined;
-  const s = String(value).toLowerCase();
-  if (s === '1' || s === 'true') return true;
-  if (s === '0' || s === 'false') return false;
-  return undefined;
-}
+/** Zod: path param order id */
+const orderIdParamSchema = z.object({ id: z.coerce.number().int().positive('ORDER_ID_INVALID') });
+
+/** Zod: PATCH /api/admin/orders/:id/assign-courier body (courierId optional: omit or null = unassign) */
+const assignCourierBodySchema = z.object({
+  courierId: z.union([z.number().int().positive(), z.null()]).optional(),
+});
 
 function createAdminOrdersRouter({ listLiveOrders, assignCourierToOrder, auditLogger }) {
   const router = express.Router();
@@ -43,19 +55,17 @@ function createAdminOrdersRouter({ listLiveOrders, assignCourierToOrder, auditLo
 
   router.get('/orders', authenticate, requireRole('admin', 'manager'), async (req, res, next) => {
     try {
-      const darkStoreId = parseIntParam(req.query.darkStoreId, undefined);
-      const tab = req.query.tab ? String(req.query.tab) : undefined;
-      const needsCourier = parseBoolParam(req.query.needsCourier);
-      const problematic = parseBoolParam(req.query.problematic);
-      const q = req.query.q ? String(req.query.q) : undefined;
-      const limit = parseIntParam(req.query.limit, 50);
-      const offset = parseIntParam(req.query.offset, 0);
-
+      const parsed = listLiveOrdersQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        const first = parsed.error.errors[0];
+        return res.status(400).json({ success: false, error: first?.message || 'VALIDATION_ERROR', details: parsed.error.flatten() });
+      }
+      const { darkStoreId, tab, needsCourier, problematic, q, limit, offset } = parsed.data;
       const result = await listLiveOrders.execute({
         darkStoreId,
         tab,
-        needsCourier,
-        problematic,
+        needsCourier: needsCourier === true,
+        problematic: problematic === true,
         q,
         limit,
         offset,
@@ -69,20 +79,23 @@ function createAdminOrdersRouter({ listLiveOrders, assignCourierToOrder, auditLo
   /**
    * Ops: assign/unassign courier for order (used by live dashboard)
    * PATCH /api/admin/orders/:id/assign-courier
-   * Body: { courierId: number | null }
+   * Body: { courierId?: number | null }
    */
   router.patch('/orders/:id/assign-courier', authenticate, requireRole('admin', 'manager'), async (req, res, next) => {
     try {
       if (!assignCourierToOrder || typeof assignCourierToOrder.execute !== 'function') {
         return res.status(500).json({ success: false, error: 'ASSIGN_USECASE_MISSING' });
       }
-
-      const orderId = parseIntParam(req.params.id, null);
-      if (!orderId || orderId <= 0) {
-        return res.status(400).json({ success: false, error: 'ORDER_ID_INVALID' });
+      const paramParsed = orderIdParamSchema.safeParse(req.params);
+      const bodyParsed = assignCourierBodySchema.safeParse(req.body || {});
+      if (!paramParsed.success) {
+        return res.status(400).json({ success: false, error: paramParsed.error.errors[0]?.message || 'ORDER_ID_INVALID' });
       }
-
-      const courierId = Object.prototype.hasOwnProperty.call(req.body || {}, 'courierId') ? req.body.courierId : undefined;
+      if (!bodyParsed.success) {
+        return res.status(400).json({ success: false, error: 'VALIDATION_ERROR', details: bodyParsed.error.flatten() });
+      }
+      const orderId = paramParsed.data.id;
+      const courierId = bodyParsed.data.courierId ?? null;
       const result = await assignCourierToOrder.execute({
         actor: { id: req.user.id, role: req.user.role },
         orderId,

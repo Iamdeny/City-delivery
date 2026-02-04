@@ -1,13 +1,20 @@
 /**
- * UpdateDarkStore (application use-case)
+ * UpdateDarkStore (application use-case).
+ * Admin/manager only.
  */
 
+/**
+ * @param {Object} deps
+ * @param {Object} deps.darkStoreRepository - update(id, patch)
+ * @returns {{ execute: (params: { actor: { id: number, role: string }, id: number, patch: Object }) => Promise<{ ok: boolean, status: number, body: Object }> }}
+ */
 function createUpdateDarkStore({ darkStoreRepository }) {
   if (!darkStoreRepository) throw new Error('UpdateDarkStore: darkStoreRepository is required');
 
   return {
     /**
-     * @param {{ actor:{id:number, role:string}, id:number, patch:any }} params
+     * @param {{ actor: { id: number, role: string }, id: number, patch: Object }} params
+     * @returns {Promise<{ ok: boolean, status: number, body: Object }>}
      */
     async execute(params) {
       const role = params?.actor?.role || 'unknown';

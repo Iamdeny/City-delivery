@@ -43,7 +43,7 @@ export function PriceDisplay({
           </span>
         )}
         <span 
-          className="text-indigo-600"
+          className="text-blue-600"
           aria-label={`Цена со скидкой ${final}`}
         >
           {final}

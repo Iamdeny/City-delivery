@@ -98,7 +98,7 @@ function ProductGrid({
           </div>
         </div>
         <div className="text-center py-10">
-          <div className="inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-gray-600">Загружаем товары...</p>
         </div>
       </div>
@@ -136,7 +136,7 @@ function ProductGrid({
           )}
           <button
             onClick={onRefreshProducts}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white border-none rounded-xl cursor-pointer font-semibold text-base transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-xl cursor-pointer font-semibold text-base transition-all shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -161,7 +161,7 @@ function ProductGrid({
       </div>
 
       {hasFilters && (
-        <div className="hidden lg:flex px-4 py-3.5 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg mb-6 border border-purple-200 justify-between items-center text-sm text-purple-700 backdrop-blur-sm shadow-sm">
+        <div className="hidden lg:flex px-4 py-3.5 bg-blue-50 rounded-lg mb-6 border border-blue-200 justify-between items-center text-sm text-blue-700 backdrop-blur-sm shadow-sm">
           <span>
             Показано {displayProducts.length} товаров
             {searchQuery && ` по запросу "${searchQuery}"`}
@@ -172,7 +172,7 @@ function ProductGrid({
           </span>
           <button
             onClick={onResetFilters}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white border-none rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+            className="px-4 py-2 bg-blue-600 text-white border-none rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-md hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
           >
             Показать все
           </button>

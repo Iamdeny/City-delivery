@@ -9,6 +9,7 @@ const { query } = require('../config/database');
 const smartCartService = require('./smartCartService');
 const inventoryService = require('./inventoryService');
 const orderDispatcher = require('./orderDispatcher');
+const orderService = require('./orderService'); // ✅ NEW: Use unified order service
 const logger = require('../utils/logger');
 
 class CheckoutService {
@@ -62,7 +63,7 @@ class CheckoutService {
             details: zoneCheck.details
           });
         } else {
-          darkStoreId = zoneCheck.darkStoreId;
+          darkStoreId = zoneCheck.store?.id; // Fixed: use store.id from dispatcher
           estimatedDeliveryTime = zoneCheck.estimatedDeliveryTime;
         }
       } else {
@@ -182,7 +183,7 @@ class CheckoutService {
 
   /**
    * Optimistic checkout processing
-   * Creates order with immediate response, continues processing in background
+   * Uses OrderService for core order creation
    * 
    * @param {number} userId
    * @param {object} orderData
@@ -192,7 +193,7 @@ class CheckoutService {
     const startTime = Date.now();
 
     try {
-      // Pre-validate again (in case state changed since last check)
+      // 1. Pre-validate (includes stock and delivery checks)
       const validation = await this.preValidate(userId, orderData);
 
       if (!validation.valid) {
@@ -204,124 +205,55 @@ class CheckoutService {
         };
       }
 
-      // Get cart items
+      // 2. Get cart items for order creation
       const cart = await smartCartService.getCart(userId);
-      
       if (!cart.success || !cart.cart || !cart.cart.items || cart.cart.items.length === 0) {
-        return {
-          success: false,
-          error: 'EMPTY_CART',
-          message: 'Корзина пуста'
-        };
+        return { success: false, error: 'EMPTY_CART', message: 'Корзина пуста' };
       }
 
       const items = cart.cart.items.map(item => ({
         productId: item.productId,
-        quantity: item.quantity,
-        price: item.price
+        quantity: item.quantity
       }));
 
-      // Reserve inventory (atomic operation)
-      const reservation = await inventoryService.reserve(
+      // 3. Delegate order creation to OrderService
+      // This handles: reservation, database transaction, items insertion, notifications, dispatching
+      const orderResult = await orderService.createOrder(userId, {
+        ...orderData,
         items,
-        userId,
-        validation.darkStoreId
-      );
+        darkStoreId: validation.darkStoreId
+      });
 
-      if (!reservation.success) {
-        return {
-          success: false,
-          error: 'RESERVATION_FAILED',
-          message: 'Не удалось зарезервировать товары',
-          unavailableItems: reservation.unavailableItems
-        };
-      }
+      const order = orderResult.order;
 
-      // Calculate final total
-      const totalAmount = items.reduce((sum, item) => 
-        sum + (parseFloat(item.price) * parseInt(item.quantity)), 0
-      );
-
-      // Create order in database
-      const orderResult = await query(
-        `INSERT INTO orders (
-          client_id, 
-          dark_store_id,
-          status, 
-          total, 
-          address, 
-          client_latitude, 
-          client_longitude, 
-          phone,
-          comment,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-        RETURNING id, status, total, created_at`,
-        [
-          userId,
-          validation.darkStoreId || 1,
-          'pending',
-          totalAmount,
-          orderData.address,
-          orderData.latitude || null,
-          orderData.longitude || null,
-          orderData.phone,
-          orderData.comment || `Оплата: ${orderData.paymentMethod || 'cash'}`
-        ]
-      );
-
-      const order = orderResult.rows[0];
-
-      // Insert order items
-      for (const item of items) {
-        await query(
-          `INSERT INTO order_items (order_id, product_id, quantity, price)
-           VALUES ($1, $2, $3, $4)`,
-          [order.id, item.productId, item.quantity, item.price]
-        );
-      }
-
-      // Confirm reservation (link to order)
-      await inventoryService.confirm(reservation.reservationId, order.id);
-
-      // Clear cart
+      // 4. Clear cart after successful order creation
       await smartCartService.clearCart(userId);
 
-      // Create payment if not cash
+      // 5. Create payment if not cash
       let paymentResult = null;
       if (orderData.paymentMethod && orderData.paymentMethod !== 'cash') {
         try {
           const paymentService = require('./paymentService');
           paymentResult = await paymentService.createPayment(
             order.id,
-            parseFloat(totalAmount),
+            parseFloat(order.total),
             `Заказ #${order.id}`,
             { userId: userId.toString() }
           );
           
-          // Update order with payment info
           if (paymentResult.success) {
-            await query(
-              `UPDATE orders SET payment_status = 'pending' WHERE id = $1`,
-              [order.id]
-            );
+            await query(`UPDATE orders SET payment_status = 'pending' WHERE id = $1`, [order.id]);
           }
         } catch (paymentError) {
           logger.error('Ошибка создания платежа:', paymentError);
-          // Не прерываем создание заказа, платеж можно создать позже
         }
       } else {
-        // Cash payment - mark as paid
-        await query(
-          `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
-          [order.id]
-        );
+        await query(`UPDATE orders SET payment_status = 'paid' WHERE id = $1`, [order.id]);
       }
 
       const processingTime = Date.now() - startTime;
-      logger.info(`[CheckoutService] Order ${order.id} created in ${processingTime}ms`);
+      logger.info(`[CheckoutService] Order ${order.id} processed via OrderService in ${processingTime}ms`);
 
-      // Return optimistic response
       return {
         success: true,
         orderId: order.id,
@@ -343,45 +275,23 @@ class CheckoutService {
       return {
         success: false,
         error: 'CHECKOUT_FAILED',
-        message: 'Ошибка при оформлении заказа',
-        details: error.message
+        message: error.message || 'Ошибка при оформлении заказа',
+        details: error.details
       };
     }
   }
 
   /**
    * Quick checkout status check
-   * For optimistic UI updates
    */
   async getCheckoutStatus(orderId) {
     try {
-      const result = await query(
-        `SELECT id, status, total_amount, created_at, updated_at
-         FROM orders
-         WHERE id = $1`,
-        [orderId]
-      );
-
-      if (result.rows.length === 0) {
-        return {
-          success: false,
-          error: 'ORDER_NOT_FOUND'
-        };
-      }
-
-      return {
-        success: true,
-        order: result.rows[0]
-      };
+      return await orderService.getOrderById(orderId);
     } catch (error) {
       logger.error('[CheckoutService] Status check error:', error);
-      return {
-        success: false,
-        error: 'STATUS_CHECK_FAILED'
-      };
+      return { success: false, error: 'STATUS_CHECK_FAILED' };
     }
   }
 }
 
 module.exports = new CheckoutService();
-

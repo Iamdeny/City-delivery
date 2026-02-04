@@ -1,11 +1,10 @@
 /**
- * InventoryGateway adapter (temporary).
+ * InventoryGateway adapter (port implementation for orders module).
  *
- * This adapter lives in the inventory module boundary and exposes
- * the minimal API orders needs (reserve/confirm/release).
+ * Exposes minimal API orders needs: reserve, confirm, release, cancelOrder.
+ * Wraps legacy `src/services/inventoryService`.
  *
- * Today it wraps the legacy `src/services/inventoryService`.
- * Later we will move the implementation behind inventory application/use-cases.
+ * @returns {import('../../../orders/application/ports').InventoryGateway}
  */
 
 const inventoryService = require('../../../services/inventoryService');

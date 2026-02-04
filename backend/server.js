@@ -32,15 +32,28 @@ if (fs.existsSync(backendEnvPath)) {
 
 // Импорт модулей (модульный монолит)
 const { authRouter, createAdminUsersRouter } = require('./src/modules/users');
-const { createOrdersModule, createAdminOrdersRouter, cartRouter, trackingRouter, checkoutRouter } = require('./src/modules/orders');
-const { productsRouter, createInventoryGateway, createDarkStoresRouter, createInventoryRouter, createAdminDarkStoresRouter } = require('./src/modules/inventory');
-const { createAuditLogger, createAdminAuditRouter } = require('./src/modules/audit');
+const {
+  createOrdersModule,
+  createAdminOrdersRouter,
+} = require('./src/modules/orders');
+const {
+  productsRouter,
+  createInventoryGateway,
+  createDarkStoresRouter,
+  createInventoryRouter,
+  createAdminDarkStoresRouter,
+} = require('./src/modules/inventory');
+const {
+  createAuditLogger,
+  createAdminAuditRouter,
+} = require('./src/modules/audit');
 
 // Импорт WebSocket обработчиков
 const setupWebSocket = require('./src/websocket/socketHandler');
 
 // Импорт сервисов
 const queueService = require('./src/services/queueService');
+const orderDispatcher = require('./src/services/orderDispatcher');
 
 const app = express();
 const server = http.createServer(app);
@@ -85,27 +98,27 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Разрешаем запросы без origin (например, мобильные приложения или Postman)
     if (!origin) return callback(null, true);
-    
+
     // В development режиме разрешаем все для удобства разработки
     if (process.env.NODE_ENV === 'development') {
       callback(null, true);
       return;
     }
-    
+
     // Проверяем точное совпадение
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
       return;
     }
-    
+
     // Проверяем регулярные выражения (для localtunnel, Cloudflare и т.д.)
-    const isAllowed = allowedOrigins.some(allowed => {
+    const isAllowed = allowedOrigins.some((allowed) => {
       if (allowed instanceof RegExp) {
         return allowed.test(origin);
       }
       return false;
     });
-    
+
     if (isAllowed) {
       callback(null, true);
     } else {
@@ -165,17 +178,28 @@ const auditLogger = createAuditLogger();
 app.use('/api/admin', createAdminUsersRouter({ auditLogger }));
 
 const inventoryGateway = createInventoryGateway();
-const ordersModule = createOrdersModule({ inventoryGateway, queueService, auditLogger });
+const ordersModule = createOrdersModule({
+  inventoryGateway,
+  queueService,
+  auditLogger,
+  orderDispatcher,
+});
+
 app.use('/api/orders', ordersModule.ordersRouter);
-app.use('/api/admin', createAdminOrdersRouter({ inventoryGateway, queueService, auditLogger }));
+app.use(
+  '/api/admin',
+  createAdminOrdersRouter({ inventoryGateway, queueService, auditLogger })
+);
 app.use('/api/admin', createAdminDarkStoresRouter({ auditLogger }));
 app.use('/api/admin', createAdminAuditRouter({ auditLogger }));
 app.use('/api/products', productsRouter);
 app.use('/api/dark-stores', createDarkStoresRouter());
 app.use('/api/inventory', createInventoryRouter());
-app.use('/api/cart', cartRouter); // ✅ Phase 3: Smart Cart
-app.use('/api/tracking', trackingRouter); // ✅ Phase 3: Real-time Tracking
-app.use('/api/checkout', checkoutRouter); // ✅ Phase 4: Checkout Optimization
+
+// Module routes
+app.use('/api/cart', ordersModule.cartRouter);
+app.use('/api/checkout', ordersModule.checkoutRouter);
+app.use('/api/tracking', ordersModule.trackingRouter);
 
 // Статика для изображений
 app.use('/uploads', express.static('uploads'));

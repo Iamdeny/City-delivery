@@ -7,13 +7,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/app/hooks/useCart';
+import { useCartItems } from '@/app/hooks/useCartUtils';
 import { useProductFilters, type SortOption } from '@/app/hooks/useProductFilters';
 import ProductGrid from '@/app/components/product/ProductGrid';
+import ProductSections from '@/app/components/home/ProductSections';
 import FiltersSidebar from '@/app/components/filters/FiltersSidebar';
 import CategoryNav from '@/app/components/navigation/CategoryNav';
 import MobileFiltersDrawer from '@/app/components/filters/MobileFiltersDrawer';
 import type { Product } from '@/types';
-import { ChevronRight, X, Search } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 function sortLabel(option: SortOption): string {
   switch (option) {
@@ -54,8 +56,8 @@ export default function ProductsClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Хуки для корзины и фильтров
   const { cart, totalItems, addToCart, decrementQuantity } = useCart();
+  const cartItems = useCartItems(cart);
   
   // Мемоизируем пропсы для useProductFilters
   const productFiltersProps = useMemo(() => ({ products }), [products]);
@@ -271,28 +273,22 @@ export default function ProductsClient({
       .map(([name]) => name);
   }, [products]);
 
-  // Samokat-like hint on hero (mobile)
-  const [addressHintOpen, setAddressHintOpen] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const key = 'cd:address-hint-dismissed:v1';
-    const dismissed = window.localStorage.getItem(key) === '1';
-    if (!dismissed) setAddressHintOpen(true);
-  }, []);
+  const hasFilters = useMemo(
+    () =>
+      Boolean(
+        searchQuery ||
+          selectedCategories.length > 0 ||
+          priceRange[0] > minPrice ||
+          priceRange[1] < maxPrice
+      ),
+    [searchQuery, selectedCategories.length, priceRange, minPrice, maxPrice]
+  );
 
-  const dismissAddressHint = useCallback(() => {
-    setAddressHintOpen(false);
-    try {
-      window.localStorage.setItem('cd:address-hint-dismissed:v1', '1');
-    } catch {
-      // ignore
-    }
-  }, []);
+  const displayProducts = useMemo(
+    () => (hasFilters ? filteredProducts : products),
+    [hasFilters, filteredProducts, products]
+  );
 
-  const featuredShelfProducts = useMemo(() => {
-    return (filteredProducts.length > 0 ? filteredProducts : products).slice(0, 8);
-  }, [filteredProducts, products]);
-  
   const clearSearchInUrl = useCallback(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.delete('search');
@@ -361,7 +357,7 @@ export default function ProductsClient({
               const href = params.toString() ? `/products?${params.toString()}` : '/products';
               router.replace(href);
             }}
-            placeholder="Искать в Самокате"
+            placeholder="Найти молоко, хлеб, сыр…"
             className="w-full h-[44px] pl-12 pr-4 bg-[#f2f2f2] border-0 rounded-xl text-base font-normal text-[#1a1a1a] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:bg-white transition-all"
             style={{
               fontFamily: 'Inter, Avenir, Helvetica, Arial, sans-serif',
@@ -392,158 +388,9 @@ export default function ProductsClient({
         )}
       </aside>
 
-      {/* Центральная часть - Товары */}
+      {/* Контент каталога (Banani Catalog: поиск → категории → секции или сетка) */}
       <div className="flex-1">
-        {/* Samokat-like hero + "white sheet" (mobile only) */}
-        <div className="lg:hidden -mx-4">
-          <section
-            className="relative h-[420px] overflow-hidden"
-            aria-label="Главный баннер"
-          >
-            {/* Decorative "photo-like" background (placeholder) */}
-            <div className="absolute inset-0 bg-[radial-gradient(1200px_500px_at_30%_30%,rgba(255,255,255,0.22),transparent_60%),radial-gradient(900px_480px_at_70%_35%,rgba(255,211,155,0.22),transparent_55%),linear-gradient(180deg,#4b3b2b_0%,#9c6f3f_40%,#f0e7db_100%)]" />
-            <div className="absolute inset-0 bg-black/15" />
-
-            {/* Address hint bubble */}
-            {addressHintOpen && (
-              <div className="absolute left-4 right-4 top-[calc(var(--mobile-header-h,64px)+22px)]">
-                <div className="inline-flex items-start gap-3 rounded-2xl bg-[#2b2b2e]/90 text-white px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                  <div className="text-[15px] font-semibold leading-snug">
-                    Кажется, не тот адрес!
-                    <br />
-                    Точно привезти сюда?
-                  </div>
-                  <button
-                    type="button"
-                    className="ml-auto -mr-1 -mt-0.5 w-8 h-8 rounded-full flex items-center justify-center text-white/80 active:scale-95"
-                    onClick={dismissAddressHint}
-                    aria-label="Закрыть подсказку"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Hero title */}
-            <div className="absolute left-4 right-4 bottom-[86px]">
-              <div className="text-white text-[26px] font-bold tracking-tight drop-shadow-[0_6px_18px_rgba(0,0,0,0.35)]">
-                Скоро Пасха!
-              </div>
-            </div>
-
-            {/* Dots */}
-            <div className="absolute left-0 right-0 bottom-[56px] flex items-center justify-center gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <span
-                  // eslint-disable-next-line react/no-array-index-key
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${i === 0 ? 'bg-white' : 'bg-white/35'}`}
-                  aria-hidden="true"
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* White sheet */}
-          <section className="-mt-7 bg-white rounded-t-[28px] shadow-[0_-10px_26px_rgba(0,0,0,0.10)] pt-4">
-            <div className="px-4 flex items-center justify-between gap-3">
-              <h2 className="text-[22px] font-bold text-gray-800">Выгодная полка</h2>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 text-[13px] font-medium text-gray-500 active:scale-[0.99]"
-                onClick={() => {
-                  // пока ведем на начало каталога (позже можно на отдельную витрину)
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                aria-label="Открыть раздел полностью"
-              >
-                Больше <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="mt-3 px-4 -mr-4">
-              <div className="flex gap-3 overflow-x-auto pb-3 pr-4 snap-x snap-mandatory">
-                {/* Promo tile */}
-                <button
-                  type="button"
-                  className="snap-start flex-shrink-0 w-[168px] h-[206px] rounded-[26px] overflow-hidden border border-gray-100 shadow-sm bg-white active:scale-[0.99]"
-                  aria-label="Все скидки и акции"
-                >
-                  <div className="h-[106px] bg-[#ff3363] px-4 py-3">
-                    <div className="text-white text-[16px] font-bold leading-tight">
-                      Все скидки
-                      <br />
-                      и акции
-                    </div>
-                  </div>
-                  <div className="h-[100px] bg-[#f2f2f2] flex items-center justify-center">
-                    <div className="text-[64px] font-bold text-gray-800 leading-none">%</div>
-                  </div>
-                </button>
-
-                {featuredShelfProducts.map((p) => (
-                  <div
-                    key={p.id}
-                    className="snap-start flex-shrink-0 w-[168px] h-[206px] rounded-[26px] overflow-hidden border border-gray-100 shadow-sm bg-white"
-                  >
-                    <div className="h-[118px] bg-[#f2f2f2] flex items-center justify-center rounded-t-[26px] relative overflow-hidden">
-                      {p.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="w-full h-full object-contain p-2"
-                          loading="lazy"
-                        />
-                      ) : (
-                        // Пытаемся использовать изображение из папки bargain-shelf
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`/images/bargain-shelf/${p.id}.jpg`}
-                          alt={p.name}
-                          className="w-full h-full object-contain p-2"
-                          loading="lazy"
-                          onError={(e) => {
-                            // Если изображение не найдено, показываем placeholder
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const placeholder = target.nextElementSibling as HTMLElement;
-                            if (placeholder) placeholder.style.display = 'flex';
-                          }}
-                        />
-                      )}
-                      {/* Placeholder, если изображение не загрузилось */}
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-[42px] absolute inset-0" style={{ display: p.image ? 'none' : 'flex' }}>
-                        ⬤
-                      </div>
-                    </div>
-                    <div className="px-3 pt-2.5 pb-3">
-                      <div className="text-[15px] font-bold text-gray-800">
-                        {Math.round(p.price).toLocaleString('ru-RU')} ₽
-                      </div>
-                      <div
-                        className="mt-1 text-[13px] font-medium text-gray-700 leading-snug overflow-hidden"
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {p.name}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Divider to separate from sticky filters bar */}
-            <div className="h-3" />
-          </section>
-        </div>
-
-        {/* Мобайл: липкая панель под шапкой (категории + фильтры) */}
+        {/* Липкая панель: категории + фильтры (мобильные) */}
         <div
           className="lg:hidden sticky top-[calc(var(--mobile-header-h,112px)+var(--safe-top))] z-[900]
                      -mx-4 px-4 py-3 mb-3
@@ -646,32 +493,40 @@ export default function ProductsClient({
 
         <div
           className={
-            // Когда плавающая корзина видима — добавляем нижний отступ,
-            // чтобы последние карточки не прятались под кнопкой
             totalItems > 0
               ? 'pb-[calc(92px+var(--safe-bottom))]'
               : 'pb-[calc(72px+var(--safe-bottom))]'
           }
         >
-          <ProductGrid
-            products={products}
-            filteredProducts={filteredProducts}
-            loading={false}
-            error={null}
-            onAddToCart={addToCart}
-            onRemoveFromCart={decrementQuantity}
-            onRefreshProducts={() => window.location.reload()}
-            onResetFilters={handleResetAllFilters}
-            onClearSearch={clearSearchInUrl}
-            popularCategories={popularCategories}
-            onSelectCategory={(category) => handleQuickCategoryChange([category])}
-            searchQuery={searchQuery}
-            selectedCategories={selectedCategories}
-            priceRange={priceRange}
-            minPrice={minPrice}
-            maxPrice={maxPrice}
-            cart={cart}
-          />
+          {hasFilters ? (
+            <ProductGrid
+              products={products}
+              filteredProducts={filteredProducts}
+              loading={false}
+              error={null}
+              onAddToCart={addToCart}
+              onRemoveFromCart={decrementQuantity}
+              onRefreshProducts={() => window.location.reload()}
+              onResetFilters={handleResetAllFilters}
+              onClearSearch={clearSearchInUrl}
+              popularCategories={popularCategories}
+              onSelectCategory={(category) => handleQuickCategoryChange([category])}
+              searchQuery={searchQuery}
+              selectedCategories={selectedCategories}
+              priceRange={priceRange}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              cart={cartItems}
+            />
+          ) : (
+            <div className="lg:bg-transparent bg-white rounded-t-[28px] pt-4 -mx-4 lg:mx-0 shadow-[0_-10px_26px_rgba(0,0,0,0.08)] lg:shadow-none">
+              <ProductSections
+                products={displayProducts}
+                onAddToCart={addToCart}
+                cart={cartItems}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

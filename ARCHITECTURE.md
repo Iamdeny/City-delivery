@@ -1,435 +1,201 @@
-### Архитектура City Delivery: модульный монолит + Clean Architecture
+# Архитектура City Delivery
 
-Цель: держать `orders`, `inventory` (склад), `users` максимально изолированными внутри одного backend‑проекта так, чтобы их можно было **выделить в микросервисы** с минимальными изменениями.
-
----
-
-### 1) Принципы (простые правила)
-
-- **Модульный монолит**: один деплой/процесс, но *жёсткие границы* внутри кода.
-- **Clean Architecture**: зависимости всегда направлены внутрь:
-  - **domain** ← **application** ← **interfaces/infrastructure**
-- **Никаких “скрытых связей”**:
-  - `orders` не импортирует `inventory`‑инфраструктуру (DB/redis/сервисы) напрямую.
-  - `orders` вызывает `inventory` только через **порт/контракт** (gateway/interface).
-- **Композиция на границе**:
-  - wiring (сборка зависимостей) только в `server.js` / `modules/*/index.js` (composition root).
+Модульный монолит + Clean Architecture. Цель: изолировать домены **orders**, **inventory**, **users**, **audit** так, чтобы при необходимости их можно было выделить в микросервисы с минимальными изменениями.
 
 ---
 
-### 2) Границы модулей (что где живёт)
+## 1. Принципы
 
-#### **users**
-- auth (email/password, OTP, Telegram), профиль, роли, политики доступа.
-- владеет таблицами `users`, `refresh_tokens` и т.п.
-
-#### **inventory** (warehouse)
-- каталог товаров, остатки, резервации, доступность товара в складе.
-- владеет `products`, `inventory_reservations`, `dark_stores` и т.п.
-
-#### **orders**
-- жизненный цикл заказа, оформление, статусы, назначение курьера/сборщика, интеграционные события.
-- владеет `orders`, `order_items`, `couriers`, `order_pickers` и т.п.
-- **не** “копает” в таблицах inventory напрямую (кроме переходного периода миграции).
+- **Модульный монолит:** один деплой/процесс, жёсткие границы внутри кода.
+- **Clean Architecture:** зависимости направлены внутрь:
+  - **domain** ← **application** ← **interfaces / infrastructure**
+- **Без скрытых связей:**
+  - Модуль `orders` не импортирует инфраструктуру `inventory` (DB/Redis) напрямую.
+  - Взаимодействие только через **порты** (gateway / repository / publisher).
+- **Composition root:** сборка зависимостей только в `server.js` и `modules/*/index.js`.
 
 ---
 
-### 3) Целевая структура папок (шаблон)
+## 2. Границы модулей
 
-`backend/src/modules/<module>/`
+| Модуль | Зона ответственности | Владение данными |
+|--------|----------------------|-------------------|
+| **users** | Auth (email/password, OTP, Telegram), профиль, роли, политики | `users`, `refresh_tokens` и т.п. |
+| **inventory** | Каталог, остатки, резервации, склады (dark_stores) | `products`, `inventory_reservations`, `dark_stores` |
+| **orders** | Жизненный цикл заказа, статусы, курьер/сборщик, события | `orders`, `order_items`, курьеры, возвраты |
+| **audit** | Аудит событий (действия пользователей, изменения) | таблицы аудита |
 
-- `domain/`
-  - Entities / Value Objects / Domain Services / Domain Events
-- `application/`
-  - use-cases (команды/запросы), DTO, порты (interfaces), политики/валидации уровня приложения
-- `interfaces/http/`
-  - express routers/controllers (HTTP → application)
-- `infrastructure/`
-  - postgres repositories, redis/cache, queue adapters, внешние API (application ports implementations)
-
-`backend/src/shared/` (минимальный shared-kernel)
-- logger, errors, request context, clock/uuid abstractions (при необходимости)
+Правило: `orders` не обращается к таблицам inventory напрямую — только через **InventoryGateway** (резерв/подтверждение/освобождение).
 
 ---
 
-### 4) Правила зависимостей (обязательные)
+## 3. Целевая структура модуля (backend)
 
-- **domain**
-  - запрещено импортировать что‑либо из Express/DB/Redis/Queue/HTTP
-- **application**
-  - запрещено импортировать инфраструктуру
-  - работает через **порты**:
-    - `OrderRepository`, `InventoryGateway`, `UserRepository`, `EventBus/QueuePublisher`, `Clock`, и т.п.
-- **interfaces/http**
-  - не содержит бизнес‑логики; максимум: аутентификация, валидация ввода, маппинг DTO
-  - вызывает use-case и возвращает result
-- **infrastructure**
-  - реализует порты (DB, redis, queue)
-  - может логировать и делать ретраи/таймауты
+```
+backend/src/modules/<module>/
+├── application/
+│   ├── queries/          # Чтение (ListXxx, GetXxx)
+│   └── useCases/         # Команды (CreateOrder, UpdateOrderStatus, …)
+├── interfaces/http/       # Express-роутеры (публичные и admin*.router.js)
+└── infrastructure/
+    ├── postgres/         # Репозитории (реализация портов)
+    ├── queue/            # Очереди (при необходимости)
+    └── ...                # Внешние адаптеры
+```
+
+Общий shared-kernel: `backend/src/utils/` (logger, metrics), `middleware/`, `validators/`.
 
 ---
 
-### 5) Контракты между модулями (как общаться)
+## 4. Правила зависимостей
 
-#### Внутри монолита (сейчас)
-- Модуль A вызывает модуль B только через порт:
+- **domain** — не импортирует Express/DB/Redis/HTTP.
+- **application** — только порты (OrderRepository, InventoryGateway, QueuePublisher и т.д.).
+- **interfaces/http** — без бизнес-логики: аутентификация, валидация ввода, вызов use-case, маппинг DTO.
+- **infrastructure** — реализует порты (Postgres, Redis, очередь).
+
+---
+
+## 5. Контракты между модулями
+
+- В монолите: модуль A вызывает B только через порт, например:
   - `orders` → `InventoryGateway.reserve/confirm/release`
-  - `orders` → `QueuePublisher.addNotification/addAnalytics`
-
-#### При переходе к микросервисам (потом)
-- Этот же порт становится HTTP/gRPC клиентом:
-  - `InventoryGatewayHttpClient`
-  - `QueuePublisherKafka`
-
-Правило: **use-case не меняется** — меняется только adapter.
+  - `orders` → `QueuePublisher` (уведомления, аналитика)
+- При переходе к микросервисам тот же порт заменяется адаптером (HTTP/gRPC/Kafka). Use-case не меняется.
 
 ---
 
-### 6) Триггеры и метрики: когда пора выделять микросервисы
+## 6. Когда выделять микросервисы
 
-Режем на микросервисы обычно тогда, когда выполняются **минимум 2 из 3**:
+Обычно при выполнении **не менее 2 из 3** условий:
 
-#### (A) Независимые релизы/команды
-- **Release‑block rate**: >30–40% релизов блокируются изменениями “в другом домене”.
-- **Merge конфликтов много** между доменами, команды “мешают” друг другу.
-- Требуются разные окна релизов/согласования (orders не может ждать catalog).
+- **Независимые релизы:** >30–40% релизов блокируются изменениями в другом домене.
+- **Разная нагрузка/масштаб:** catalog читается в 10–50× чаще orders; разный профиль масштабирования.
+- **Изоляция отказов/SLA:** падение некритичного сервиса не должно ломать создание заказа.
 
-#### (B) Разная нагрузка/масштаб
-- **QPS перекос**: `catalog/products` читает 10–50× больше, чем `orders`.
-- **p95/p99 latency** на create order/резервацию растёт из‑за конкуренции за ресурсы.
-- Нужны разные профили масштабирования (read-heavy vs write-heavy).
-
-#### (C) Надёжность/SLA/изоляция отказов
-- Падение не‑критичного (аналитика/уведомления) ломает критичный путь (create order).
-- Требуются разные SLA на домены (orders 99.9%, остальное можно ниже).
-- Требуется “blast radius” изоляция (ошибка в одном домене не должна класть всё).
-
-Дополнительные сигналы:
-- CI/release слишком медленный и мешает бизнесу (после оптимизаций).
-- Нужны разные БД/схемы/ретенции данных.
-- Сложно обеспечить запрет “чужих” запросов к таблицам другого домена.
+Первые кандидаты на выделение: **catalog/products**, затем **inventory**; **orders** — позже (оркестратор, много связей).
 
 ---
 
-### 7) Кого резать первым (когда дойдём)
+## 7. Чеклист для PR (архитектура)
 
-- **1-й кандидат: catalog/products** (много чтения, кэш, проще изолировать)
-- **2-й кандидат: inventory** (если резервации/остатки стали узким местом)
-- **orders обычно позже**, потому что это оркестратор и тянет зависимости
-
----
-
-### 8) Практический чек‑лист для PR (архитектурный)
-
-Перед мерджем изменения в домене:
-- [ ] Код добавлен в правильный модуль (`modules/<module>/...`)
+- [ ] Код в правильном модуле (`modules/<module>/...`)
 - [ ] Нет прямых импортов инфраструктуры другого модуля
 - [ ] Use-case не зависит от Express/DB
-- [ ] Все внешние взаимодействия оформлены портом (gateway/repository/publisher)
-- [ ] Бизнес‑правила находятся в application/domain, а не в route
-- [ ] Добавлены/обновлены тесты use-case (если уже есть тестовый каркас)
+- [ ] Внешние взаимодействия через порты (gateway/repository/publisher)
+- [ ] Бизнес-правила в application/domain, а не в route
 
 ---
 
-### 9) Текущее состояние (2026‑01)
+## 8. Текущее состояние (2026)
 
-- `backend/server.js` — composition root: монтирует модульные routers.
-- `orders`: `POST /api/orders` уже вынесен в use-case (`CreateOrder`) и общается с inventory через gateway.
-- Остальные endpoints ещё частично legacy; мигрируем постепенно “слайсами”.
+### Backend
 
-# 🏗️ Архитектура системы доставки продуктов
+- **Точка входа:** `backend/server.js` — composition root, монтирует модульные роутеры и legacy routes.
+- **Модули (Clean Architecture):**
+  - **users** — ListUsers, UpdateUserAdmin; auth (в т.ч. Telegram) через legacy `routes/auth.js`.
+  - **inventory** — dark_stores, список товаров/резерваций; CreateDarkStore, UpdateDarkStore; роутеры: dark-stores, inventory, admin dark-stores.
+  - **orders** — CreateOrder, UpdateOrderStatus, AssignCourierToOrder, ReturnOrder; запросы: ListLiveOrders, ListOrdersByStore, GetReturnSummary; общение с inventory через gateway.
+  - **audit** — ListAuditEvents; admin-роутер аудита.
+- **Legacy:** `src/routes/` (auth, cart, checkout, orders, payments, products, tracking) и `src/services/` (checkout, inventory, orderDispatcher, payment, queue, telegramAuth и т.д.) — постепенно переносятся в модули.
+- **WebSocket:** `src/websocket/socketHandler.js` — real-time статусы заказов, курьер.
+- **Инфраструктура:** PostgreSQL, миграции в `src/database/migrations/`, опционально Redis, pgbouncer (docker-compose).
 
-## 📋 Обзор системы
+### Frontend
 
-**Цель:** MVP для быстрого запуска бизнеса доставки продуктов из дарксторов
-**Масштаб:** 60,000 населения, быстрая доставка 15-30 минут
-**Модель:** Uber Eats / Самокат (on-demand delivery)
+- **frontend/** — legacy (Create React App + React 19), источник миграции.
+- **frontend-next/** — основной веб (Next.js 15 App Router):
+  - Клиент: каталог, корзина, заказ, категории, фильтры, поиск.
+  - Ops (админка): `app/ops/` — склады (warehouses), заказы (live dashboard), пользователи, аудит; модульная структура (page, *Client.tsx, types).
+  - API: BFF-прокси в `app/api/` (auth, products, orders, dark-stores, health, geocode и т.д.).
+- **collector/** и **courier/** — вспомогательные приложения (App.js).
 
----
+### Стек
 
-## 🎯 Основные компоненты
-
-### 1. **Клиентское приложение (Customer App)**
-- Просмотр товаров и категорий
-- Корзина и оформление заказа
-- Отслеживание заказа в реальном времени
-- История заказов
-- Профиль и адреса доставки
-
-### 2. **Приложение курьера (Courier App)**
-- Получение заказов
-- Навигация к складу и клиенту
-- Обновление статуса доставки
-- Отслеживание заработка
-- Рейтинг и статистика
-
-### 3. **Приложение сборщика (Picker App)**
-- Получение заданий на сборку
-- Сканирование товаров
-- Обновление статуса сборки
-- Оптимизация маршрута по складу
-
-### 4. **Админ-панель (Admin Dashboard)**
-- Управление товарами и складами
-- Мониторинг заказов
-- Управление курьерами и сборщиками
-- Аналитика и отчеты
-
-### 5. **Backend API**
-- REST API для всех приложений
-- WebSocket для real-time обновлений
-- Система диспетчеризации заказов
-- Геолокация и маршрутизация
+- **Backend:** Node.js, Express, PostgreSQL, Socket.io, JWT.
+- **Frontend-next:** Next.js 15, React 18, TypeScript, Tailwind, shadcn/ui, Vitest.
+- **Инфра:** Docker (PostgreSQL, Redis, pgbouncer), скрипты запуска (start-dev.ps1, start-postgres.ps1 и т.д.).
 
 ---
 
-## 🏛️ Архитектура Backend
+## 9. Обзор системы
 
-### Структура модулей (Monolith с возможностью разделения)
+**Цель продукта:** MVP доставки продуктов из дарксторов (модель Samokat / Uber Eats).  
+**Масштаб:** быстрая доставка 15–30 минут.
+
+### Основные приложения
+
+- **Клиент (frontend-next):** каталог, корзина, оформление заказа, отслеживание в реальном времени, профиль.
+- **Ops (frontend-next/app/ops):** управление складами, заказами, пользователями, аудит.
+- **Курьер / сборщик:** отдельные приложения (courier/, collector/) или расширение ops.
+
+### Жизненный цикл заказа (упрощённо)
+
+1. Клиент создаёт заказ → 2. Назначение склада (по геолокации) → 3. Очередь сборки → 4. Назначение сборщика → 5. Сборка → 6. Готов к доставке → 7. Назначение курьера → 8. Курьер забирает и доставляет → 9. Заказ завершён (или возврат).
+
+---
+
+## 10. Backend: структура каталогов
 
 ```
 backend/
+├── server.js
 ├── src/
-│   ├── config/          # Конфигурация
-│   ├── database/        # Подключение к БД
-│   ├── middleware/      # Express middleware
-│   ├── routes/          # API маршруты
-│   │   ├── auth.js
-│   │   ├── products.js
-│   │   ├── orders.js
-│   │   ├── couriers.js
-│   │   ├── pickers.js
-│   │   ├── delivery.js
-│   │   └── admin.js
-│   ├── services/         # Бизнес-логика
-│   │   ├── orderDispatcher.js    # Диспетчеризация заказов
-│   │   ├── locationService.js    # Геолокация
-│   │   ├── notificationService.js # Уведомления
-│   │   └── analyticsService.js   # Аналитика
-│   ├── models/          # Модели данных
-│   ├── utils/           # Утилиты
-│   └── websocket/       # WebSocket обработчики
-└── server.js
-```
-
-### Принципы архитектуры:
-
-1. **Separation of Concerns** - разделение на слои
-2. **Service Layer Pattern** - бизнес-логика в сервисах
-3. **Repository Pattern** - работа с БД через модели
-4. **Event-Driven** - события для real-time обновлений
-
----
-
-## 🔄 Жизненный цикл заказа
-
-```
-1. Клиент создает заказ
-   ↓
-2. Система назначает склад (по геолокации)
-   ↓
-3. Заказ попадает в очередь сборки
-   ↓
-4. Диспетчер назначает сборщика
-   ↓
-5. Сборщик собирает заказ
-   ↓
-6. Заказ готов к доставке
-   ↓
-7. Диспетчер назначает курьера
-   ↓
-8. Курьер забирает заказ
-   ↓
-9. Курьер доставляет заказ
-   ↓
-10. Заказ завершен
+│   ├── config/           # database.js, delivery.js
+│   ├── database/         # schema.sql, migrations/, migrate.js
+│   ├── middleware/       # auth.js
+│   ├── modules/
+│   │   ├── users/        # application, interfaces/http, infrastructure/postgres
+│   │   ├── inventory/    # + infrastructure/inventoryGateway.js
+│   │   ├── orders/       # + infrastructure/queue, delivery
+│   │   └── audit/
+│   ├── routes/           # auth, cart, checkout, orders, payments, products, tracking (legacy)
+│   ├── services/         # checkout, inventory, orderDispatcher, payment, queue, telegramAuth, …
+│   ├── validators/
+│   ├── utils/            # logger, metrics
+│   └── websocket/        # socketHandler.js
+└── scripts/              # seed-data, arch-lint, ops-smoke, …
 ```
 
 ---
 
-## 📊 База данных
+## 11. База данных (основное)
 
-### Основные таблицы:
+- **users**, **refresh_tokens** — пользователи и сессии.
+- **products**, **dark_stores**, **inventory_reservations** — каталог и склады.
+- **orders**, **order_items** — заказы; курьеры и сборщики (связанные таблицы).
+- **Аудит, платежи** — отдельные схемы/миграции в `src/database/`.
 
-1. **users** - пользователи (клиенты, курьеры, сборщики, админы)
-2. **products** - товары
-3. **dark_stores** - склады (дарксторы)
-4. **orders** - заказы
-5. **order_items** - позиции заказа
-6. **couriers** - курьеры
-7. **order_pickers** - сборщики
-8. **delivery_routes** - маршруты доставки
-9. **notifications** - уведомления
-10. **analytics** - аналитика
-
-### Индексы для производительности:
-- По статусу заказов
-- По геолокации курьеров
-- По времени создания заказов
-- По складам
+Индексы: по статусу заказов, по складу, по времени создания, по геолокации при необходимости.
 
 ---
 
-## 🔐 Система авторизации
+## 12. Авторизация
 
-### Роли:
-- **customer** - клиент
-- **courier** - курьер
-- **picker** - сборщик
-- **admin** - администратор
-- **manager** - менеджер склада
-
-### JWT токены:
-- Access token (15 минут)
-- Refresh token (7 дней)
-- Роль в payload токена
+- JWT (access + refresh), роль в payload.
+- Роли: customer, courier, picker, admin, manager.
+- Админские эндпоинты под префиксом `/api/admin/`, проверка роли в middleware.
 
 ---
 
-## 📡 Real-time обновления (WebSocket)
+## 13. Real-time (WebSocket)
 
-### События:
-
-**Для клиента:**
-- `order-status-updated` - обновление статуса заказа
-- `courier-assigned` - назначен курьер
-- `courier-location` - местоположение курьера
-- `order-ready` - заказ готов
-
-**Для курьера:**
-- `new-order-assigned` - назначен новый заказ
-- `order-cancelled` - заказ отменен
-- `route-updated` - обновлен маршрут
-
-**Для сборщика:**
-- `new-pickup-task` - новое задание на сборку
-- `order-priority-updated` - изменен приоритет
-
-**Для админа:**
-- `new-order` - новый заказ
-- `courier-status` - статус курьера
-- `system-alert` - системные алерты
+- События для клиента: обновление статуса заказа, назначение курьера, местоположение курьера.
+- Для курьера/сборщика: новый заказ, отмена, обновление маршрута.
+- Для админа: новый заказ, статусы, алерты.
 
 ---
 
-## 🚀 Масштабируемость
+## 14. Масштабирование и безопасность
 
-### Текущая архитектура (MVP):
-- Monolith backend (быстрый запуск)
-- PostgreSQL для данных
-- Redis для кеширования и очередей
-- WebSocket для real-time
-
-### Будущее масштабирование:
-- Микросервисы (когда нужно):
-  - Order Service
-  - Delivery Service
-  - Notification Service
-  - Analytics Service
-- Message Queue (RabbitMQ/Kafka)
-- CDN для статики
-- Load Balancer
-- Database replication
+- **Сейчас:** монолит, PostgreSQL, опционально Redis, WebSocket.
+- **Дальше:** при росте нагрузки — выделение catalog/inventory в отдельные сервисы, очереди (Kafka/RabbitMQ), репликация БД.
+- **Безопасность:** HTTPS, валидация входных данных, rate limiting, CORS, секреты не в коде.
 
 ---
 
-## 📱 Мобильные приложения
+## 15. Следующие шаги
 
-### Технологии:
-- **React Native** - единая кодовая база для iOS/Android
-- Или **Flutter** - альтернатива
-- Или **PWA** - для быстрого MVP (можно использовать React)
-
-### Функционал:
-- Геолокация в реальном времени
-- Push-уведомления
-- Офлайн режим (кеширование)
-- Камера для сканирования (сборщики)
-
----
-
-## 🔧 Технологический стек
-
-### Backend:
-- Node.js + Express
-- PostgreSQL
-- Redis
-- Socket.io
-- JWT для авторизации
-
-### Frontend (Customer):
-- React + TypeScript
-- React Query для кеширования
-- WebSocket для real-time
-
-### Frontend (Admin):
-- React + TypeScript
-- Admin панель (React Admin или кастомная)
-
-### Mobile:
-- React Native (или PWA для MVP)
-
----
-
-## 📈 Метрики и мониторинг
-
-### Ключевые метрики:
-- Время доставки (цель: 15-30 минут)
-- Процент успешных доставок
-- Рейтинг курьеров
-- Загрузка складов
-- Конверсия заказов
-
-### Мониторинг:
-- Health checks
-- Error tracking (Sentry)
-- Performance monitoring
-- Database query monitoring
-
----
-
-## 🛡️ Безопасность
-
-- HTTPS везде
-- Валидация всех входных данных
-- Rate limiting
-- SQL injection protection
-- XSS protection
-- CORS настройка
-- Защита от DDoS
-
----
-
-## 🚦 Приоритеты разработки (MVP)
-
-### Фаза 1 (MVP - 2-3 недели):
-1. ✅ Клиентское приложение (базовое)
-2. ✅ Backend API
-3. ✅ Система заказов
-4. ✅ Базовый диспетчер
-5. ✅ WebSocket для клиентов
-
-### Фаза 2 (Расширение - 2-3 недели):
-1. Приложение курьера
-2. Приложение сборщика
-3. Улучшенный диспетчер
-4. Геолокация
-
-### Фаза 3 (Оптимизация):
-1. Аналитика
-2. Оптимизация маршрутов
-3. Push-уведомления
-4. Админ-панель
-
----
-
-## 📝 Следующие шаги
-
-1. Создать структуру backend
-2. Настроить базу данных
-3. Реализовать систему авторизации
-4. Создать API для заказов
-5. Реализовать диспетчер заказов
-6. Настроить WebSocket
-7. Создать приложения для курьеров и сборщиков
-
+- Перенос оставшейся логики из `routes/` и `services/` в модули (orders, inventory, users).
+- Продолжение миграции UI с frontend на frontend-next (см. `.cursor/rules/migration-frontend-next.md`).
+- Усиление типизации (Zod/OpenAPI) и сквозных метрик/observability.

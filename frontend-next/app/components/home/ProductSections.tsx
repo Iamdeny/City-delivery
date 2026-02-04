@@ -91,9 +91,9 @@ export default function ProductSections({ products, onAddToCart, cart = [] }: Pr
             {section.link && (
               <Link
                 href={section.link}
-                className="inline-flex items-center gap-1 text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors active:scale-[0.99]"
+                className="inline-flex items-center gap-1 text-[13px] font-semibold text-green-600 hover:text-green-700 transition-colors active:scale-[0.99]"
               >
-                Больше
+                Смотреть все
                 <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
               </Link>
             )}

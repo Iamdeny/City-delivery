@@ -214,16 +214,19 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
           ✕
         </button>
 
-        <h2 className="m-0 mb-8 text-[28px] font-bold text-gray-900 tracking-[-0.5px]">
-          {isLogin ? 'Вход' : 'Регистрация'}
+        <h2 className="m-0 mb-2 text-[24px] font-extrabold text-gray-900 tracking-[-0.3px]">
+          Вход или регистрация
         </h2>
+        <p className="mb-6 text-[13px] text-gray-600">
+          Мы отправим код подтверждения на ваш номер
+        </p>
 
         {/* Переключатель метода авторизации */}
         <div className="flex gap-3 mb-6 bg-gray-100 p-1 rounded-2xl">
           <button
             type="button"
             className={`flex-1 py-3 px-5 border-none rounded-xl text-sm font-medium text-gray-500 cursor-pointer transition-all hover:text-gray-900 hover:bg-white/50 active:scale-[0.98] ${
-              authMethod === 'phone' ? 'bg-white text-[#EE386E] font-semibold shadow-[0_2px_8px_rgba(238,56,110,0.15)]' : 'bg-transparent'
+              authMethod === 'phone' ? 'bg-white text-blue-600 font-semibold shadow-[0_2px_8px_rgba(37,99,235,0.15)]' : 'bg-transparent'
             }`}
             onClick={() => setAuthMethod('phone')}
           >
@@ -232,7 +235,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
           <button
             type="button"
             className={`flex-1 py-3 px-5 border-none rounded-xl text-sm font-medium text-gray-500 cursor-pointer transition-all hover:text-gray-900 hover:bg-white/50 active:scale-[0.98] ${
-              authMethod === 'email' ? 'bg-white text-[#EE386E] font-semibold shadow-[0_2px_8px_rgba(238,56,110,0.15)]' : 'bg-transparent'
+              authMethod === 'email' ? 'bg-white text-blue-600 font-semibold shadow-[0_2px_8px_rgba(37,99,235,0.15)]' : 'bg-transparent'
             }`}
             onClick={() => setAuthMethod('email')}
           >
@@ -277,14 +280,14 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                       autoComplete="tel"
                       disabled={isLoading}
                       maxLength={18}
-                      className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-[#EE386E] focus:shadow-[0_0_0_3px_rgba(238,56,110,0.1)]"
+                      className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleSendOTP}
                     disabled={isLoading || !validatePhone(phone)}
-                    className="w-full py-[18px] bg-[#EE386E] text-white border-none rounded-2xl text-base font-semibold cursor-pointer transition-all mt-2 shadow-[0_2px_8px_rgba(238,56,110,0.25)] hover:bg-[#DB2777] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(238,56,110,0.35)] active:scale-[0.98] active:shadow-[0_2px_6px_rgba(238,56,110,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full py-[18px] bg-blue-600 text-white border-none rounded-2xl text-base font-semibold cursor-pointer transition-all mt-2 shadow-[0_2px_8px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {isLoading ? 'Отправка...' : 'Получить код'}
                   </button>
@@ -298,7 +301,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                     </p>
                     <button
                       type="button"
-                      className="bg-none border-none text-[#EE386E] text-sm font-medium cursor-pointer underline p-1 transition-colors hover:text-[#DB2777]"
+                      className="bg-none border-none text-blue-600 text-sm font-medium cursor-pointer underline p-1 transition-colors hover:text-blue-700"
                       onClick={() => {
                         setStep('input');
                         setOtpCode('');
@@ -325,14 +328,14 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                       autoComplete="one-time-code"
                       disabled={isLoading}
                       maxLength={6}
-                      className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-2xl font-semibold tracking-[8px] text-center font-mono bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-[#EE386E] focus:shadow-[0_0_0_3px_rgba(238,56,110,0.1)]"
+                      className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-2xl font-semibold tracking-[8px] text-center font-mono bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleVerifyOTP}
                     disabled={isLoading || otpCode.length !== 6}
-                    className="w-full py-[18px] bg-[#EE386E] text-white border-none rounded-2xl text-base font-semibold cursor-pointer transition-all mt-2 shadow-[0_2px_8px_rgba(238,56,110,0.25)] hover:bg-[#DB2777] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(238,56,110,0.35)] active:scale-[0.98] active:shadow-[0_2px_6px_rgba(238,56,110,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full py-[18px] bg-blue-600 text-white border-none rounded-2xl text-base font-semibold cursor-pointer transition-all mt-2 shadow-[0_2px_8px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(37,99,235,0.35)] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {isLoading ? 'Проверка...' : 'Подтвердить'}
                   </button>
@@ -343,7 +346,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                   ) : (
                     <button
                       type="button"
-                      className="bg-none border-none text-[#EE386E] text-sm font-medium cursor-pointer underline py-2 mt-2 transition-colors hover:text-[#DB2777] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-none border-none text-blue-600 text-sm font-medium cursor-pointer underline py-2 mt-2 transition-colors hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={handleSendOTP}
                       disabled={isLoading}
                     >
@@ -377,7 +380,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                     placeholder="Ваше имя"
                     autoComplete="name"
                     disabled={isLoading}
-                    className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-[#EE386E] focus:shadow-[0_0_0_3px_rgba(238,56,110,0.1)]"
+                    className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
                   />
                 </div>
               )}
@@ -395,7 +398,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                   placeholder="email@example.com"
                   autoComplete="email"
                   disabled={isLoading}
-                  className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-[#EE386E] focus:shadow-[0_0_0_3px_rgba(238,56,110,0.1)]"
+                  className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
                 />
               </div>
 
@@ -413,14 +416,14 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
                   minLength={isLogin ? 1 : 8}
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
                   disabled={isLoading}
-                  className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-[#EE386E] focus:shadow-[0_0_0_3px_rgba(238,56,110,0.1)]"
+                  className="w-full py-4 px-5 border border-gray-300 rounded-2xl text-base bg-white text-gray-900 transition-all box-border placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
                 />
               </div>
 
               <button 
                 type="submit" 
                 disabled={isLoading} 
-                className="w-full py-[18px] bg-[#EE386E] text-white border-none rounded-2xl text-base font-semibold cursor-pointer transition-all mt-2 shadow-[0_2px_8px_rgba(238,56,110,0.25)] hover:bg-[#DB2777] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(238,56,110,0.35)] active:scale-[0.98] active:shadow-[0_2px_6px_rgba(238,56,110,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full py-[18px] bg-blue-600 text-white border-none rounded-2xl text-base font-semibold cursor-pointer transition-all mt-2 shadow-[0_2px_8px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
               </button>
@@ -458,7 +461,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
         <div className="mt-6 text-center pt-6 border-t border-gray-200">
           <button
             type="button"
-            className="bg-none border-none text-[#EE386E] cursor-pointer text-sm font-medium p-2 transition-all hover:text-[#DB2777] hover:underline active:scale-[0.98]"
+            className="bg-none border-none text-blue-600 cursor-pointer text-sm font-medium p-2 transition-all hover:text-blue-700 hover:underline active:scale-[0.98]"
             onClick={() => {
               setIsLogin(!isLogin);
               setError(null);

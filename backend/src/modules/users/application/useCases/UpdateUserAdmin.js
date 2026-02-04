@@ -1,21 +1,24 @@
 /**
- * UpdateUserAdmin (application use-case)
- *
- * Admin-only actions: change role and/or activation status.
+ * UpdateUserAdmin (application use-case).
+ * Admin-only: change role and/or activation status.
  */
 
 const ALLOWED_ROLES = new Set(['customer', 'courier', 'picker', 'admin', 'manager']);
 
+/**
+ * @param {Object} deps
+ * @param {Object} deps.userRepository - getById(userId), updateAdmin(userId, { role?, is_active? })
+ * @returns {{ execute: (params: UpdateUserAdminInput) => Promise<UpdateUserAdminResult> }}
+ * @typedef {{ actor: { id: number, role: string }, userId: number, patch: { role?: string, is_active?: boolean } }} UpdateUserAdminInput
+ * @typedef {{ ok: boolean, status: number, body: Object }} UpdateUserAdminResult
+ */
 function createUpdateUserAdmin({ userRepository }) {
   if (!userRepository) throw new Error('UpdateUserAdmin: userRepository is required');
 
   return {
     /**
-     * @param {{
-     *  actor: { id:number, role:string },
-     *  userId:number,
-     *  patch: { role?:string, is_active?:boolean }
-     * }} params
+     * @param {UpdateUserAdminInput} params
+     * @returns {Promise<UpdateUserAdminResult>}
      */
     async execute(params) {
       const actor = params.actor || {};

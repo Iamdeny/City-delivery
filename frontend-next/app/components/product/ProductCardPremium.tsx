@@ -1,5 +1,5 @@
 /**
- * Premium Product Card - от Gorillas + Getir + Yandex
+ * Premium Product Card — стиль Banani / Самокат
  * HD images, bold typography, smooth animations
  * Мигрировано из frontend/src/components/Product/ProductCardPremium.tsx
  */
@@ -200,7 +200,7 @@ function ProductCardPremium({
       className={`bg-white border-0 overflow-hidden flex flex-col cursor-pointer relative
                   transition-[transform,box-shadow] duration-200
                   active:scale-[0.99]
-                  ${isInCart ? 'ring-1 ring-pink-200' : ''}`}
+                  ${isInCart ? 'ring-1 ring-blue-200' : ''}`}
       initial={shouldAnimate ? { opacity: 0, y: 20 } : undefined}
       animate={{ opacity: 1, y: 0 }}
       exit={shouldAnimate ? { opacity: 0, scale: 0.9 } : undefined}
@@ -248,7 +248,7 @@ function ProductCardPremium({
           type="button"
           className={`absolute top-2.5 right-2.5 w-8 h-8 sm:w-9 sm:h-9 rounded-full backdrop-blur-md ring-1 shadow-sm flex items-center justify-center active:scale-[0.98] transition-colors ${
             isFavorite
-              ? 'bg-pink-500/90 ring-pink-300/30 text-white'
+              ? 'bg-blue-600 ring-blue-300/30 text-white'
               : 'bg-white/85 ring-black/5 text-gray-600'
           }`}
           aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
@@ -272,7 +272,7 @@ function ProductCardPremium({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
-              className="absolute bottom-2.5 left-2.5 rounded-[24px] bg-[#404040] text-white text-[11px] sm:text-[12px] font-bold px-[5px] py-[1px]"
+              className="absolute bottom-2.5 left-2.5 rounded-[24px] bg-red-500 text-white text-[11px] sm:text-[12px] font-bold px-[5px] py-[1px]"
             >
               −{discount}%
             </motion.div>
@@ -323,20 +323,24 @@ function ProductCardPremium({
           {product.description ? product.description : product.category}
         </p>
 
-        {/* Footer: price pill + plus (Samokat promo) */}
+        {/* Footer: price + CTA (Banani-style) */}
         <div className="flex items-center justify-between gap-2.5 mt-[6px]">
-          <div className="rounded-[40px] bg-[#ffebef] pl-3 pr-8 py-[7px] h-[36px] flex items-center">
+          <div className="flex flex-col leading-none">
             {hasDiscount && priceUi?.hasDiscount ? (
-              <div className="flex flex-col leading-none">
-                <span className="text-[11px] text-gray-500 line-through mr-1">{priceUi.original}</span>
-                <span className="text-[15px] font-bold text-gray-800">{priceUi.final}</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[13px] text-gray-500 line-through">{priceUi.original}</span>
+                <span className="text-[15px] font-extrabold text-[#1a1a1a]">
+                  {priceUi.final}
+                </span>
               </div>
             ) : (
-              <span className="text-[15px] font-bold text-gray-800">{formatPriceWithCurrency(price)}</span>
+              <span className="text-[15px] font-extrabold text-[#1a1a1a]">
+                {formatPriceWithCurrency(price)}
+              </span>
             )}
           </div>
 
-          {/* Mobile: Samokat-like + button / qty controls */}
+          {/* Mobile: + В корзину / qty controls */}
           <div
             className="lg:hidden"
             onClick={(e) => e.stopPropagation()}
@@ -366,7 +370,7 @@ function ProductCardPremium({
                 <motion.button
                   key="add-button-mobile"
                   type="button"
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-pink-500 text-white border-none cursor-pointer shadow-sm transition-all flex-shrink-0 active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center px-3 h-9 rounded-full bg-blue-600 text-white text-[13px] font-semibold border-none cursor-pointer shadow-sm transition-all flex-shrink-0 active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                   onClick={handleAddToCart}
                   disabled={!product.inStock}
                   initial={{ scale: 0.9, opacity: 0 }}
@@ -374,15 +378,13 @@ function ProductCardPremium({
                   exit={{ scale: 0.9, opacity: 0 }}
                   aria-label={`Добавить ${product.name} в корзину`}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
-                  </svg>
+                  + В корзину
                 </motion.button>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Desktop: keep existing premium controls */}
+          {/* Desktop: + В корзину / qty controls */}
           <div className="hidden lg:block">
             <AnimatePresence mode="wait">
               {cartQuantity > 0 ? (
@@ -406,7 +408,7 @@ function ProductCardPremium({
                 <motion.button
                   key="add-button"
                   type="button"
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-pink-500 text-white border-none cursor-pointer shadow-md transition-all flex-shrink-0 hover:bg-pink-600 hover:shadow-lg active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+                  className="flex items-center justify-center px-4 h-9 rounded-full bg-blue-600 text-white text-[13px] font-semibold border-none cursor-pointer shadow-md transition-all flex-shrink-0 hover:bg-blue-700 hover:shadow-lg active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
                   onClick={handleAddToCart}
                   disabled={!product.inStock}
                   whileHover={{ scale: 1.05 }}

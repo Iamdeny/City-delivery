@@ -1,25 +1,37 @@
 /**
  * Admin Users HTTP interface.
- * GET /api/admin/users
+ * GET /api/admin/users, PATCH /api/admin/users/:id
  */
 
 const express = require('express');
+const { z } = require('zod');
 const { authenticate, requireRole } = require('../../../../middleware/auth');
 const { metrics } = require('../../../../utils/metrics');
 
-function parseIntParam(value, fallback) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.floor(n);
-}
+/** Zod: GET /api/admin/users query */
+const listUsersQuerySchema = z.object({
+  q: z.string().max(200).optional(),
+  role: z.string().max(50).optional(),
+  isActive: z
+    .union([z.literal('1'), z.literal('0'), z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === '1' || (v && v.toLowerCase() === 'true')),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
-function parseBoolParam(value) {
-  if (value === undefined) return undefined;
-  const s = String(value).toLowerCase();
-  if (s === '1' || s === 'true') return true;
-  if (s === '0' || s === 'false') return false;
-  return undefined;
-}
+/** Zod: path param user id */
+const userIdParamSchema = z.object({ id: z.coerce.number().int().positive('USER_ID_INVALID') });
+
+/** Zod: PATCH /api/admin/users/:id body */
+const updateUserAdminBodySchema = z.object({
+  role: z.enum(['customer', 'courier', 'picker', 'admin', 'manager']).optional(),
+  is_active: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+}).transform((data) => ({
+  role: data.role,
+  is_active: data.is_active !== undefined ? data.is_active : data.isActive,
+}));
 
 function createAdminUsersRouter({ listUsers, updateUserAdmin, auditLogger }) {
   const router = express.Router();
@@ -44,13 +56,19 @@ function createAdminUsersRouter({ listUsers, updateUserAdmin, auditLogger }) {
 
   router.get('/users', authenticate, requireRole('admin', 'manager'), async (req, res, next) => {
     try {
-      const q = req.query.q ? String(req.query.q) : undefined;
-      const role = req.query.role ? String(req.query.role) : undefined;
-      const isActive = parseBoolParam(req.query.isActive);
-      const limit = parseIntParam(req.query.limit, 50);
-      const offset = parseIntParam(req.query.offset, 0);
-
-      const result = await listUsers.execute({ q, role, isActive, limit, offset });
+      const parsed = listUsersQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        const first = parsed.error.errors[0];
+        return res.status(400).json({ success: false, error: first?.message || 'VALIDATION_ERROR', details: parsed.error.flatten() });
+      }
+      const { q, role, isActive, limit, offset } = parsed.data;
+      const result = await listUsers.execute({
+        q,
+        role,
+        isActive,
+        limit,
+        offset,
+      });
       return res.json(result);
     } catch (err) {
       return next(err);
@@ -60,15 +78,18 @@ function createAdminUsersRouter({ listUsers, updateUserAdmin, auditLogger }) {
   // Admin-only: update role/is_active
   router.patch('/users/:id', authenticate, requireRole('admin'), async (req, res, next) => {
     try {
-      const userId = parseIntParam(req.params.id, null);
-      if (!userId || userId <= 0) {
-        return res.status(400).json({ success: false, error: 'USER_ID_INVALID' });
+      const paramParsed = userIdParamSchema.safeParse(req.params);
+      const bodyParsed = updateUserAdminBodySchema.safeParse(req.body || {});
+      if (!paramParsed.success) {
+        return res.status(400).json({ success: false, error: paramParsed.error.errors[0]?.message || 'USER_ID_INVALID' });
       }
-
+      if (!bodyParsed.success) {
+        return res.status(400).json({ success: false, error: 'VALIDATION_ERROR', details: bodyParsed.error.flatten() });
+      }
+      const userId = paramParsed.data.id;
       const patch = {};
-      if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'role')) patch.role = req.body.role;
-      if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'is_active')) patch.is_active = req.body.is_active;
-      if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'isActive')) patch.is_active = req.body.isActive;
+      if (bodyParsed.data.role !== undefined) patch.role = bodyParsed.data.role;
+      if (bodyParsed.data.is_active !== undefined) patch.is_active = bodyParsed.data.is_active;
 
       const result = await updateUserAdmin.execute({
         actor: { id: req.user.id, role: req.user.role },

@@ -5,7 +5,6 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight } from 'lucide-react';
 
 interface Promotion {
   id: number;
@@ -49,10 +48,9 @@ export default function PromotionsSection() {
         <h2 className="text-[22px] font-extrabold text-[#1a1a1a] leading-tight">Акции</h2>
         <Link
           href="/products"
-          className="inline-flex items-center gap-1 text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors active:scale-[0.99]"
+          className="inline-flex items-center gap-1 text-[13px] font-semibold text-green-600 hover:text-green-700 transition-colors active:scale-[0.99]"
         >
-          Все акции
-          <ChevronRight className="w-4 h-4" />
+          Все акции &gt;
         </Link>
       </div>
 

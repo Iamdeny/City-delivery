@@ -42,7 +42,7 @@ const sizeClasses = {
 const variantClasses = {
   default: 'bg-gray-50',
   modern: 'bg-white border border-gray-200',
-  premium: 'bg-gradient-to-br from-indigo-500 via-pink-500 to-orange-500 p-1.5',
+  premium: 'bg-gradient-to-br from-blue-600 to-blue-500 p-1.5',
 };
 
 export function QuantityControls({
@@ -127,7 +127,7 @@ export function QuantityControls({
         aria-label="Увеличить количество"
         aria-disabled={!canIncrement}
       >
-        <Plus size={iconSize} className={isPremium ? 'text-white' : 'text-indigo-600'} />
+        <Plus size={iconSize} className={isPremium ? 'text-white' : 'text-blue-600'} />
       </motion.button>
     </div>
   );

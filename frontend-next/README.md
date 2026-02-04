@@ -310,6 +310,6 @@ npm run check-phase
 
 ## Следующие шаги
 
-Согласно `CursorRules.js`, следующая фаза:
+Согласно `.cursor/rules/migration-frontend-next.md`, следующая фаза:
 - Фаза 7: Миграция страниц (ProductsPage, CartPage, OrderPage)
 - Фаза 8: Создание API Routes для проксирования к backend (заменит временные сервисы)

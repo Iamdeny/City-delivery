@@ -105,7 +105,7 @@ export default async function ProductsPage({
   });
 
   return (
-    <div className="min-h-screen bg-[#f2f2f2]">
+    <div className="min-h-screen bg-[#f5f5f5]">
       <main className="container mx-auto px-4 pt-0 pb-6 md:pt-6 md:pb-6 max-w-[1440px]">
         <div className="hidden lg:block mb-4">
           <Breadcrumbs />

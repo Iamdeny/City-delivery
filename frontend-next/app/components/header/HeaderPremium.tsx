@@ -1,5 +1,5 @@
 /**
- * Premium Header - вдохновлено Getir + Gorillas + Yandex Lavka
+ * Premium Header — стиль Banani / Самокат
  * Мигрировано из frontend/src/components/Header/HeaderPremium.tsx
  */
 'use client';
@@ -16,7 +16,6 @@ import type { User } from '@/app/services/authService';
 import { useNotifications } from '@/app/hooks/useNotifications';
 import { logger } from '@/lib/logger';
 import { ShoppingCart, RefreshCw, User as UserIcon, MapPin, ChevronDown } from 'lucide-react';
-import { DELIVERY_UI } from '@/lib/constants';
 
 interface HeaderPremiumProps {
   onSearchChange?: (query: string) => void;
@@ -39,7 +38,7 @@ type GeocodeResult = { id: number; label: string; lat: number; lng: number };
 export default function HeaderPremium({
   onSearchChange,
   onRefreshProducts,
-  deliveryAddress = 'Выберите склад',
+  deliveryAddress = 'Доставка до дома',
   onAddressClick,
   className = '',
 }: HeaderPremiumProps) {
@@ -127,8 +126,9 @@ export default function HeaderPremium({
     return s?.name || null;
   }, [selectedStoreId, stores]);
 
-  const storeLabel = selectedStoreName ? `Склад: ${selectedStoreName}` : deliveryAddress;
-  const subtitle = addressText ? addressText : null;
+  // Banani: в шапке показываем адрес/доставку, а не «Выберите склад»
+  const headerMainLabel = addressText?.trim() || deliveryAddress;
+  const headerTimeLabel = 'Самокат 15 мин';
 
   const applyStoreToUrl = useCallback(
     (darkStoreId: number) => {
@@ -298,16 +298,6 @@ export default function HeaderPremium({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
-  // Samokat-like: открытие поиска с плавающей кнопки снизу (открываем модалку)
-  useEffect(() => {
-    if (!mounted) return;
-    const handler = () => {
-      setIsSearchModalOpen(true);
-    };
-    window.addEventListener('cd:open-search', handler as EventListener);
-    return () => window.removeEventListener('cd:open-search', handler as EventListener);
-  }, [mounted]);
-
   // CSS-переменная высоты мобильной шапки для sticky-элементов ниже
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -417,18 +407,13 @@ export default function HeaderPremium({
 
   const isProducts = (pathname ?? '').startsWith('/products');
   const heroHeader = isProducts && !isScrolled;
-  const deliverySubtitle = useMemo(() => {
-    // В референсе: "Доставка от 15 минут"
-    const m = Math.max(1, Math.floor(DELIVERY_UI.ETA_MINUTES));
-    return `Доставка от ${m} минут`;
-  }, []);
 
   return (
     <>
       <motion.header
         className={`sticky top-0 left-0 right-0 z-[1000] transition-all duration-300 pt-[var(--safe-top)] md:pt-0
                   ${heroHeader ? 'bg-transparent border-transparent shadow-none backdrop-blur-0' : 'bg-white/95 backdrop-blur-md border-b border-gray-200'}
-                  md:bg-gradient-to-r md:from-indigo-600 md:to-purple-800 md:border-b-0
+                  md:bg-gradient-to-r md:from-[#2563eb] md:to-[#3b82f6] md:border-b-0
                   ${heroHeader ? '' : (isScrolled ? 'shadow-md' : 'shadow-sm')} ${className}`}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -468,34 +453,31 @@ export default function HeaderPremium({
                       y2="32"
                       gradientUnits="userSpaceOnUse"
                     >
-                      <stop stopColor="#6366F1" />
-                      <stop offset="1" stopColor="#8B5CF6" />
+                      <stop stopColor="#2563eb" />
+                      <stop offset="1" stopColor="#3b82f6" />
                     </linearGradient>
                   </defs>
                 </svg>
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-xl font-bold text-white tracking-tight">Доставка</span>
-                <span className="text-xs font-medium text-indigo-200 opacity-90">за 15 минут</span>
+                <span className="text-xs font-medium text-blue-200 opacity-90">за 15 минут</span>
               </div>
             </motion.div>
 
-            {/* Address Bar */}
+            {/* Address Bar — референс: синий акцент */}
             <motion.button
               className="flex items-center gap-2 px-3 py-2 bg-white/15 backdrop-blur-md border border-white/20 rounded-xl max-w-[280px] transition-all hover:bg-white/25 hover:-translate-y-0.5 hover:shadow-lg"
               onClick={handleAddressClick}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <MapPin size={20} className="text-indigo-300 flex-shrink-0" />
+              <MapPin size={20} className="text-blue-300 flex-shrink-0" />
               <div className="flex flex-col items-start flex-1 min-w-0">
-                <span className="text-xs text-white/70 font-medium">Ближайший склад</span>
+                <span className="text-xs text-white/70 font-medium">{headerTimeLabel}</span>
                 <span className="text-sm text-white font-semibold truncate w-full">
-                  {storeLabel}
+                  {headerMainLabel}
                 </span>
-                {subtitle ? (
-                  <span className="text-[11px] text-white/70 truncate w-full">{subtitle}</span>
-                ) : null}
               </div>
               <ChevronDown size={16} className="text-white/60 flex-shrink-0" />
             </motion.button>
@@ -527,11 +509,11 @@ export default function HeaderPremium({
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </motion.button>
 
-            {/* Cart Button with Pulse */}
+            {/* Cart Button with Pulse — референс: синий */}
             <motion.button
-              className={`flex items-center gap-2 px-3 py-2 bg-green-500 rounded-2xl cursor-pointer transition-all relative overflow-hidden min-h-[48px] ${
+              className={`flex items-center gap-2 px-3 py-2 bg-blue-600 rounded-2xl cursor-pointer transition-all relative overflow-hidden min-h-[48px] ${
                 cartPulse ? 'animate-[cart-pulse_0.6s_ease]' : ''
-              } hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-lg`}
+              } hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg`}
               onClick={handleCartClick}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -539,10 +521,10 @@ export default function HeaderPremium({
               transition={{ duration: 0.3 }}
             >
               <div className="relative">
-                <ShoppingCart size={24} className="text-gray-900" />
+                <ShoppingCart size={24} className="text-white" />
                 {mounted && totalItems > 0 && (
                   <motion.span
-                    className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1 border-2 border-green-500"
+                    className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1 border-2 border-blue-600"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     exit={{ scale: 0 }}
@@ -553,10 +535,10 @@ export default function HeaderPremium({
               </div>
               {hasItems && (
                 <div className="hidden lg:flex flex-col items-start">
-                  <span className="text-lg font-bold text-gray-900 leading-none">
+                  <span className="text-lg font-bold text-white leading-none">
                     <PriceDisplay price={totalAmount} size="md" />
                   </span>
-                  <span className="text-xs text-gray-700 font-medium">~15 мин</span>
+                  <span className="text-xs text-white/80 font-medium">~15 мин</span>
                 </div>
               )}
             </motion.button>
@@ -569,7 +551,7 @@ export default function HeaderPremium({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <div className="w-8 h-8 flex items-center justify-center bg-green-500 text-gray-900 font-bold rounded-full text-sm">
+                  <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-bold rounded-full text-sm">
                     {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm text-white font-medium max-w-[120px] truncate">
@@ -596,7 +578,7 @@ export default function HeaderPremium({
                   Войти
                 </motion.button>
                 <motion.button
-                  className="px-4 py-2 bg-green-500 border-none rounded-lg text-gray-900 text-sm font-semibold whitespace-nowrap transition-all hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-lg"
+                  className="px-4 py-2 bg-blue-600 border-none rounded-lg text-white text-sm font-semibold whitespace-nowrap transition-all hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg"
                   onClick={() => router.push('/login')}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -625,8 +607,8 @@ export default function HeaderPremium({
                     <path d="M10 22H22V24H10V22Z" fill="white" fillOpacity="0.9" />
                     <defs>
                       <linearGradient id="mobile-logo-gradient" x1="0" y1="0" x2="32" y2="32">
-                        <stop stopColor="#6366F1" />
-                        <stop offset="1" stopColor="#8B5CF6" />
+                        <stop stopColor="#2563eb" />
+                        <stop offset="1" stopColor="#3b82f6" />
                       </linearGradient>
                     </defs>
                   </svg>
@@ -634,11 +616,12 @@ export default function HeaderPremium({
               </motion.div>
             )}
 
+            {/* Banani: адрес + «Самокат 15 мин», без «Выберите склад» */}
             <motion.button
               className={
                 heroHeader
                   ? 'flex-1 min-w-0 flex items-start gap-2 px-0 py-0 bg-transparent border-0 rounded-none text-left'
-                  : 'flex-1 flex items-center gap-1.5 px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-2xl cursor-pointer transition-colors min-w-0 active:bg-gray-100'
+                  : 'flex-1 flex items-center gap-1.5 px-2.5 py-2 bg-white border border-gray-200 rounded-2xl cursor-pointer transition-colors min-w-0 active:bg-gray-50 shadow-sm'
               }
               onClick={handleAddressClick}
               whileTap={{ scale: 0.98 }}
@@ -647,20 +630,23 @@ export default function HeaderPremium({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-[18px] font-extrabold text-white truncate">
-                      {deliveryAddress}
+                      {headerMainLabel}
                     </span>
                     <ChevronDown size={14} className="text-white/90 flex-shrink-0" />
                   </div>
                   <div className="text-[15px] font-semibold text-white/90 leading-tight">
-                    {deliverySubtitle}
+                    {headerTimeLabel}
                   </div>
                 </div>
               ) : (
                 <>
-                  <MapPin size={16} className="text-gray-500 flex-shrink-0" />
-                  <span className="flex-1 text-sm text-gray-900 font-semibold truncate">
-                    {deliveryAddress}
-                  </span>
+                  <MapPin size={16} className="text-[#5a5a5a] flex-shrink-0" />
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="text-[13px] font-semibold text-[#1a1a1a] truncate">
+                      {headerMainLabel}
+                    </div>
+                    <div className="text-[11px] text-[#5a5a5a] truncate">{headerTimeLabel}</div>
+                  </div>
                   <ChevronDown size={12} className="text-gray-400 flex-shrink-0" />
                 </>
               )}
@@ -670,7 +656,7 @@ export default function HeaderPremium({
               {/* Cart Button */}
               {!heroHeader && (
                 <motion.button
-                  className={`w-10 h-10 flex items-center justify-center bg-green-600 rounded-full cursor-pointer transition-all relative ${
+                  className={`w-10 h-10 flex items-center justify-center bg-blue-600 rounded-full cursor-pointer transition-all relative ${
                     cartPulse ? 'animate-[cart-pulse_0.6s_ease]' : ''
                   }`}
                   onClick={handleCartClick}
@@ -704,7 +690,7 @@ export default function HeaderPremium({
                   {heroHeader ? (
                     <UserIcon size={22} className="text-white" />
                   ) : (
-                    <div className="w-7 h-7 flex items-center justify-center bg-green-600 text-white font-bold rounded-full text-sm">
+                    <div className="w-7 h-7 flex items-center justify-center bg-blue-600 text-white font-bold rounded-full text-sm">
                       {user.name?.[0]?.toUpperCase() || 'U'}
                     </div>
                   )}

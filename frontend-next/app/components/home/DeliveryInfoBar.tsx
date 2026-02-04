@@ -4,20 +4,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown, User } from 'lucide-react';
+import { ChevronDown, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function DeliveryInfoBar() {
   const router = useRouter();
-  const [address, setAddress] = useState('Выберите адрес');
-  const [deliveryTime, setDeliveryTime] = useState('30 минут');
+
+  // Дефолт как в макете Banani
+  const [address, setAddress] = useState('Дом, Пискарёвский проспект');
+  const [deliveryTime, setDeliveryTime] = useState('15–20 мин');
 
   useEffect(() => {
     try {
-      const addr = localStorage.getItem('cd_address') || 'Выберите адрес';
-      setAddress(addr);
+      const stored = localStorage.getItem('cd_address');
+      if (stored) {
+        setAddress(stored);
+      }
       // TODO: Получить реальное время доставки из API
-      setDeliveryTime('30 минут');
+      setDeliveryTime('15–20 мин');
     } catch {
       // ignore
     }
@@ -29,22 +33,34 @@ export default function DeliveryInfoBar() {
   };
 
   return (
-    <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+    <div className="px-4 pb-2.5">
+      {/* Карточка доставки: время, заголовок, адрес + самокат (референс) */}
       <button
         type="button"
         onClick={handleAddressClick}
-        className="flex-1 min-w-0 flex items-center gap-1.5 text-left active:opacity-70 transition-opacity"
+        className="w-full bg-white rounded-[20px] px-4 py-3 flex items-center justify-between shadow-sm active:scale-[0.99] transition-transform border border-gray-100"
       >
-        <span className="text-base font-extrabold text-[#1a1a1a] truncate">{address}</span>
-        <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
-        <span className="text-xs font-semibold text-[#404040] whitespace-nowrap ml-1">Доставка {deliveryTime}</span>
-      </button>
-      <button
-        type="button"
-        className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
-        aria-label="Профиль"
-      >
-        <User className="w-4 h-4 text-[#404040]" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-medium text-[#8a8a8a] leading-tight mb-0.5">
+            {deliveryTime}
+          </div>
+          <div className="text-[18px] font-extrabold text-[#1a1a1a] leading-tight">
+            Доставка до дома
+          </div>
+          <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-[#404040]">
+            <MapPin className="w-3.5 h-3.5 text-[#e11d48] flex-shrink-0" />
+            <span className="truncate">{address}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          </div>
+        </div>
+
+        <div className="ml-3 flex-shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#ffedf2] to-[#ffe9d6] flex items-center justify-center shadow-sm">
+            <span className="text-2xl" aria-hidden="true">
+              🛵
+            </span>
+          </div>
+        </div>
       </button>
     </div>
   );

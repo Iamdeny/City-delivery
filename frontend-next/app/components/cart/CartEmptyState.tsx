@@ -44,7 +44,7 @@ export function CartEmptyState({
         {/* Кнопка "Перейти к покупкам" */}
         {onGoToShopping && (
           <motion.button
-            className="flex items-center gap-2 py-3.5 px-7 mt-2 border-none rounded-[28px] bg-indigo-500 text-white text-base font-semibold cursor-pointer transition-all shadow-sm hover:bg-indigo-600 hover:shadow-md focus-visible:outline-2 focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+            className="flex items-center gap-2 py-3.5 px-7 mt-2 border-none rounded-[28px] bg-blue-600 text-white text-base font-semibold cursor-pointer transition-all shadow-sm hover:bg-blue-700 hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
             onClick={onGoToShopping}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

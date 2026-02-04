@@ -47,6 +47,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
   const [address, setAddress] = useState('ул. Ленина, д. 1, кв. 5');
   const [comment, setComment] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [leaveAtDoor, setLeaveAtDoor] = useState(false);
   const [showSberSpasibo, setShowSberSpasibo] = useState(true);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -172,10 +173,16 @@ const OrderForm: React.FC<OrderFormProps> = ({
         return;
       }
 
+      const commentParts = [
+        comment.trim(),
+        leaveAtDoor ? 'Оставить у двери' : '',
+      ].filter(Boolean);
+      const fullComment = commentParts.join('. ') || undefined;
+
       const orderData = {
         phone: phone.trim(),
         address: address.trim(),
-        comment: comment.trim() || undefined,
+        comment: fullComment,
         items: orderItems,
         latitude,
         longitude,
@@ -223,38 +230,79 @@ const OrderForm: React.FC<OrderFormProps> = ({
   };
 
   return (
-    <div className="bg-gray-50 p-0 animate-[fadeIn_0.3s_ease] w-full box-border flex flex-col min-h-0">
+    <div className="bg-[#f5f5f5] p-0 animate-[fadeIn_0.3s_ease] w-full box-border flex flex-col min-h-0">
       <div className="flex flex-col gap-0 p-0 mb-0 flex-1 min-h-0">
-        <div className="p-2 px-3 border-b border-gray-200 transition-colors bg-white box-border">
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-[15px] text-gray-900 flex-1">Доставка</span>
-            <span className="text-[15px] text-green-600 font-semibold mr-2">0 ₽</span>
+        {/* Куда везти — адрес */}
+        <div className="bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-sm mb-1 sm:mb-2">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <span className="text-[13px] font-semibold text-[#5a5a5a] uppercase tracking-wide">Куда везти</span>
+          </div>
+          <div
+            className="p-3 px-4 flex justify-between items-center gap-2 cursor-pointer active:bg-gray-50"
+            onClick={() => {
+              const newAddress = prompt('Введите адрес доставки:', address);
+              if (newAddress) {
+                setAddress(newAddress);
+                setCoordinates(null);
+                setLocationError(null);
+              }
+            }}
+          >
+            <span className="text-[15px] text-[#1a1a1a] flex-1">{address || 'Адрес не указан'}</span>
+            <span className="text-xl text-gray-400 font-light flex-shrink-0 leading-none">›</span>
+          </div>
+          <label className="flex items-center gap-3 p-3 px-4 border-t border-gray-100 cursor-pointer active:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={leaveAtDoor}
+              onChange={(e) => setLeaveAtDoor(e.target.checked)}
+              className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-[15px] text-[#1a1a1a]">Оставить у двери</span>
+          </label>
+        </div>
+
+        {/* Комментарий */}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm mb-1 sm:mb-2">
+          <div className="p-3 px-4">
+            <label className="block">
+              <span className="text-[13px] font-semibold text-[#5a5a5a] uppercase tracking-wide block mb-1">Комментарий</span>
+              <input
+                type="text"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Например: позвоните за 5 минут"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-[15px] text-[#1a1a1a] placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              />
+            </label>
           </div>
         </div>
 
-        <div 
-          className="p-2 px-3 border-b border-gray-200 transition-colors bg-white box-border cursor-pointer active:bg-gray-100" 
+        {/* Промокод */}
+        <div
+          className="bg-white rounded-2xl overflow-hidden shadow-sm mb-1 sm:mb-2 cursor-pointer active:bg-gray-50"
           onClick={() => onShowNotification('Функция промокодов скоро появится!', 'info')}
         >
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-[15px] text-gray-900 flex-1">Промокод</span>
-            <span className="text-xl text-gray-500 font-light flex-shrink-0 leading-none">›</span>
+          <div className="p-3 px-4 flex justify-between items-center gap-2">
+            <span className="text-[15px] text-[#1a1a1a] flex-1">Промокод</span>
+            <span className="text-xl text-gray-400 font-light flex-shrink-0 leading-none">›</span>
           </div>
         </div>
 
         {showSberSpasibo && (
-          <div className="bg-gray-100 rounded-xl my-1.5 p-2.5 px-3 border-none">
+          <div className="bg-[#e8f5e9] rounded-2xl my-1 sm:my-2 p-3 px-4 border border-[#c8e6c9]">
             <div className="flex justify-between items-start gap-2">
               <div className="flex flex-col gap-1 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">S</span>
-                  <span className="text-[15px] text-gray-900 flex-1">СберСпасибо</span>
+                  <span className="w-5 h-5 bg-[#16a34a] text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">S</span>
+                  <span className="text-[15px] text-[#1a1a1a] font-medium flex-1">СберСпасибо</span>
                 </div>
-                <span className="text-xs text-gray-600 leading-snug mt-1">
+                <span className="text-xs text-[#5a5a5a] leading-snug mt-1">
                   Войдите по Сбер ID и получайте бонусы при оплате любой картой
                 </span>
               </div>
               <button
+                type="button"
                 className="bg-none border-none w-6 h-6 flex items-center justify-center rounded-full text-gray-500 text-base cursor-pointer transition-all flex-shrink-0 p-0 hover:bg-black/5 hover:text-gray-900"
                 onClick={() => setShowSberSpasibo(false)}
                 aria-label="Закрыть"
@@ -265,28 +313,28 @@ const OrderForm: React.FC<OrderFormProps> = ({
           </div>
         )}
 
-        <div 
-          className="p-2 px-3 border-b border-gray-200 transition-colors bg-white box-border cursor-pointer active:bg-gray-100" 
+        {/* Оплата */}
+        <div
+          className="bg-white rounded-2xl overflow-hidden shadow-sm mb-1 sm:mb-2 cursor-pointer active:bg-gray-50"
           onClick={() => {
-            const newAddress = prompt('Введите адрес доставки:', address);
-            if (newAddress) {
-              setAddress(newAddress);
-              // Сбрасываем координаты при изменении адреса
-              setCoordinates(null);
-              setLocationError(null);
-            }
+            const method = paymentMethod === 'card' ? 'cash' : 'card';
+            setPaymentMethod(method);
+            onShowNotification(`Способ оплаты: ${method === 'card' ? 'Карта' : 'Наличные'}`, 'info');
           }}
         >
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-[15px] text-gray-900 flex-1">{address}</span>
-            <span className="text-xl text-gray-500 font-light flex-shrink-0 leading-none">›</span>
+          <div className="px-4 py-3 border-b border-gray-100">
+            <span className="text-[13px] font-semibold text-[#5a5a5a] uppercase tracking-wide">Оплата</span>
+          </div>
+          <div className="p-3 px-4 flex justify-between items-center gap-2">
+            <span className="text-[15px] text-[#1a1a1a] flex-1">{paymentMethod === 'card' ? 'Картой онлайн' : 'Наличными'}</span>
+            <span className="text-xl text-gray-400 font-light flex-shrink-0 leading-none">›</span>
           </div>
         </div>
 
-        {/* Кнопка получения геолокации */}
+        {/* Геолокация */}
         {geolocationSupported && (
-          <div 
-            className="p-2 px-3 border-b border-gray-200 transition-colors bg-white box-border cursor-pointer active:bg-gray-100" 
+          <div
+            className="bg-white rounded-2xl overflow-hidden shadow-sm mb-1 sm:mb-2 cursor-pointer active:bg-gray-50"
             onClick={async () => {
               setIsGettingLocation(true);
               setLocationError(null);
@@ -352,60 +400,52 @@ const OrderForm: React.FC<OrderFormProps> = ({
               }
             }}
           >
-            <div className="flex justify-between items-center gap-2">
+            <div className="p-3 px-4 flex justify-between items-center gap-2">
               <div className="flex flex-col flex-1">
-                <span className="text-[15px] text-gray-900">
-                  {isGettingLocation 
-                    ? '📍 Получаем геолокацию...' 
-                    : coordinates 
-                      ? `📍 Геолокация: ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
-                      : '📍 Получить мою геолокацию'
-                  }
+                <span className="text-[15px] text-[#1a1a1a]">
+                  {isGettingLocation
+                    ? '📍 Получаем геолокацию...'
+                    : coordinates
+                      ? `📍 Координаты: ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
+                      : '📍 Получить мою геолокацию'}
                 </span>
                 {locationError && (
-                  <span className="text-xs text-red-500">
-                    {locationError}
-                  </span>
+                  <span className="text-xs text-red-500 mt-0.5">{locationError}</span>
                 )}
               </div>
-              {!isGettingLocation && <span className="text-xl text-gray-500 font-light flex-shrink-0 leading-none">›</span>}
+              {!isGettingLocation && <span className="text-xl text-gray-400 font-light flex-shrink-0 leading-none">›</span>}
             </div>
           </div>
         )}
-
-        <div 
-          className="p-2 px-3 border-b border-gray-200 transition-colors bg-white box-border cursor-pointer active:bg-gray-100" 
-          onClick={() => {
-            const method = paymentMethod === 'card' ? 'cash' : 'card';
-            setPaymentMethod(method);
-            onShowNotification(`Способ оплаты: ${method === 'card' ? 'Карта' : 'Наличные'}`, 'info');
-          }}
-        >
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-[15px] text-gray-900 flex-1">Способ оплаты</span>
-            <span className="text-[15px] text-gray-900 font-medium mr-2">{paymentMethod === 'card' ? 'Карта' : 'Наличные'}</span>
-            <span className="text-xl text-gray-500 font-light flex-shrink-0 leading-none">›</span>
-          </div>
-        </div>
       </div>
 
-      <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 py-3 px-4 pb-[calc(12px+var(--inset-bottom))] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] mt-auto z-[1102] pointer-events-auto flex-shrink-0">
-        <div className="flex justify-between items-center mb-2.5 p-0 gap-2">
-          <span className="text-base text-gray-900 font-medium">Итого</span>
-          <PriceDisplay price={totalAmount} size="lg" className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent" />
+      {/* Сумма и кнопка — Banani */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 py-4 px-4 pb-[calc(16px+var(--inset-bottom))] shadow-[0_-2px_10px_rgba(0,0,0,0.06)] mt-auto z-[1102] pointer-events-auto flex-shrink-0">
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between items-center text-[15px] text-[#1a1a1a]">
+            <span>Товары</span>
+            <PriceDisplay price={totalAmount} size="sm" className="font-semibold" />
+          </div>
+          <div className="flex justify-between items-center text-[15px] text-[#1a1a1a]">
+            <span>Доставка</span>
+            <span className="font-semibold text-blue-600">0 ₽</span>
+          </div>
+          <div className="flex justify-between items-center text-[15px] font-bold text-[#1a1a1a] pt-2 border-t border-gray-100">
+            <span>Итого</span>
+            <PriceDisplay price={totalAmount} size="lg" className="font-extrabold" />
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="w-full">
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white border-none rounded-2xl text-base font-bold cursor-pointer transition-all shadow-lg hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-xl active:translate-y-0 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden z-[1103] pointer-events-auto touch-manipulation"
+            className="w-full py-3.5 bg-blue-600 text-white border-none rounded-2xl text-base font-bold cursor-pointer transition-all shadow-md hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden z-[1103] pointer-events-auto touch-manipulation"
             disabled={isSubmitting || cart.length === 0 || isGettingLocation}
           >
-            {isGettingLocation 
-              ? '📍 Получаем геолокацию...' 
-              : isSubmitting 
-                ? 'Оформляем...' 
-                : 'Продолжить'
-            }
+            {isGettingLocation
+              ? '📍 Получаем геолокацию...'
+              : isSubmitting
+                ? 'Оформляем...'
+                : `Оплатить ${totalAmount.toLocaleString('ru-RU')} ₽`}
           </button>
         </form>
       </div>

@@ -3,6 +3,7 @@
  *
  * Enforces basic state machine for order statuses.
  * Admin is allowed to override (force) transitions.
+ * @see ../ports.js for UpdateOrderStatusInput, UpdateOrderStatusResult
  */
 
 const TERMINAL = new Set(['delivered', 'cancelled']);
@@ -31,17 +32,20 @@ const CUSTOMER_CANCEL_ALLOWED_FROM = new Set(['pending', 'preparing', 'picking',
 const INVENTORY_CANCEL_ALLOWED_FROM = new Set(['pending', 'preparing', 'picking', 'ready', 'assigned_to_courier']);
 const AFTER_PICKUP = new Set(['picked_up', 'delivering']);
 
+/**
+ * @param {Object} deps
+ * @param {Object} deps.orderStatusRepository - getById, updateStatus
+ * @param {import('../ports').InventoryGateway|null} deps.inventoryGateway - cancelOrder for cancel flow
+ * @param {{ error?: function }} [deps.logger]
+ * @returns {{ execute: (params: import('../ports').UpdateOrderStatusInput) => Promise<import('../ports').UpdateOrderStatusResult> }}
+ */
 function createUpdateOrderStatusUseCase({ orderStatusRepository, inventoryGateway, logger }) {
   if (!orderStatusRepository) throw new Error('UpdateOrderStatus: orderStatusRepository is required');
 
   return {
     /**
-     * @param {{
-     *  actor: { id:number, role:string },
-     *  orderId: number,
-     *  nextStatus: string,
-     *  force?: boolean
-     * }} params
+     * @param {import('../ports').UpdateOrderStatusInput} params
+     * @returns {Promise<import('../ports').UpdateOrderStatusResult>}
      */
     async execute(params) {
       const orderId = Number(params.orderId);

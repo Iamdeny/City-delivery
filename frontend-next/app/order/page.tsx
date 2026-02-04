@@ -73,6 +73,10 @@ export default function OrderPage() {
       setOrderPlaced(true);
       clearCart();
       showNotification('Заказ успешно создан!', 'success');
+      const orderId = response.orderId ?? response.order?.id;
+      if (orderId != null) {
+        router.push(`/order/${orderId}`);
+      }
       return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Ошибка создания заказа';
@@ -130,12 +134,12 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
-      <div className="container mx-auto px-4 max-w-2xl pb-24 sm:pb-0">
+    <div className="min-h-screen bg-[#f5f5f5] py-4 sm:py-8">
+      <div className="container mx-auto px-4 max-w-2xl pb-28 sm:pb-8">
         <div className="hidden lg:block mb-4">
           <Breadcrumbs />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Оформление заказа</h1>
+        <h1 className="text-[22px] font-extrabold text-[#1a1a1a] mb-6">Оформление заказа</h1>
         <OrderForm
           cart={cart}
           onPlaceOrder={handlePlaceOrder}

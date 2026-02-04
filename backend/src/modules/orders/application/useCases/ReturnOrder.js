@@ -7,6 +7,7 @@
  *
  * NOTE: This is a "returns workflow" after pickup/delivery/cancel-after-pickup.
  * It's intentionally separate from "cancel before pickup" which uses inventory reservation rollback.
+ * @see ../ports.js for ReturnOrderInput, ReturnOrderResult
  */
 
 function normalizeItems(items) {
@@ -22,17 +23,19 @@ function normalizeItems(items) {
   return Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity }));
 }
 
+/**
+ * @param {Object} deps
+ * @param {Object} deps.orderReturnRepository - returnOrderTx
+ * @param {{ error?: function }} [deps.logger]
+ * @returns {{ execute: (params: import('../ports').ReturnOrderInput) => Promise<import('../ports').ReturnOrderResult> }}
+ */
 function createReturnOrderUseCase({ orderReturnRepository, logger }) {
   if (!orderReturnRepository) throw new Error('ReturnOrder: orderReturnRepository is required');
 
   return {
     /**
-     * @param {{
-     *  actor: { id:number, role:string },
-     *  orderId:number,
-     *  reason?: string,
-     *  items?: Array<{productId:number, quantity:number}>
-     * }} params
+     * @param {import('../ports').ReturnOrderInput} params
+     * @returns {Promise<import('../ports').ReturnOrderResult>}
      */
     async execute(params) {
       const actorRole = params.actor?.role || 'unknown';

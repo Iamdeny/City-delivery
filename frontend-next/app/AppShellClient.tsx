@@ -9,11 +9,11 @@ import { InstallPromptBanner } from './system/InstallPromptBanner';
 
 // Header остается статическим, так как он критичен для consumer UX
 import HeaderPremium from './components/header/HeaderPremium';
+import MobileBottomNav from './components/mobile/MobileBottomNav';
 
 // Динамические импорты для consumer shell (не должны тянуться в ops)
 const Footer = dynamic(() => import('./components/footer/Footer'), { ssr: true });
 const NotificationContainer = dynamic(() => import('./components/notification/NotificationContainer'));
-const FloatingCartButton = dynamic(() => import('./components/mobile/FloatingCartButtonWrapper'));
 
 export function AppShellClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
@@ -75,16 +75,19 @@ export function AppShellClient({ children }: { children: React.ReactNode }) {
   }
 
   const isHomePage = pathname === '/';
+  const isOrderPage = pathname === '/order' || pathname.startsWith('/order/');
+  const isProfilePage = pathname === '/profile' || pathname.startsWith('/profile/');
+  const isCatalogPage = pathname === '/products' || pathname.startsWith('/products');
 
   return (
     <CartProvider>
-      {/* Header скрыт на главной странице, так как там свой дизайн в стиле Самоката */}
-      {!isHomePage && <HeaderPremium />}
-      <main className="flex-1">{children}</main>
-      {/* Footer скрыт на главной странице в стиле Самоката */}
-      {!isHomePage && <Footer />}
+      {/* Header скрыт на главной, каталоге, оформлении заказа и в профиле */}
+      {!isHomePage && !isOrderPage && !isProfilePage && !isCatalogPage && <HeaderPremium />}
+      <main className="flex-1 pb-[56px]">{children}</main>
+      {/* Footer временно отключён (©, телефон, время работы, Сервер подключен) */}
+      {/* {!isHomePage && <Footer />} */}
+      <MobileBottomNav />
       <NotificationContainer />
-      <FloatingCartButton />
       {updateReady ? (
         <UpdateAvailableBanner
           onReload={() => {

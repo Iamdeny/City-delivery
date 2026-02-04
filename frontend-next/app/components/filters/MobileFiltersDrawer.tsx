@@ -47,7 +47,7 @@ export default function MobileFiltersDrawer(props: MobileFiltersDrawerProps) {
         <SlidersHorizontal className="w-4 h-4" />
         Фильтры
         {typeof props.activeFiltersCount === 'number' && props.activeFiltersCount > 0 && (
-          <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-purple-600 text-white text-xs font-bold">
+          <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-blue-600 text-white text-xs font-bold">
             {props.activeFiltersCount}
           </span>
         )}

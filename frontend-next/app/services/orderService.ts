@@ -36,6 +36,29 @@ export interface OrderResponse {
   };
 }
 
+export interface OrderItemDto {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_image?: string;
+  quantity: number;
+  price: number;
+}
+
+export interface OrderDetailDto {
+  id: number;
+  status: string;
+  client_id: number;
+  address?: string;
+  comment?: string;
+  created_at: string;
+  items: OrderItemDto[];
+}
+
+export interface GetOrderResponse {
+  order: OrderDetailDto;
+}
+
 class OrderService {
   async createOrder(data: OrderData): Promise<OrderResponse> {
     try {
@@ -148,6 +171,33 @@ class OrderService {
         logger.error('Ошибка создания заказа:', error);
       }
       throw error;
+    }
+  }
+
+  async getOrderById(orderId: number | string): Promise<GetOrderResponse | null> {
+    try {
+      const token = typeof window !== 'undefined'
+        ? localStorage.getItem(`${STORAGE_KEYS.PREFIX}access_token`)
+        : null;
+      const headers: HeadersInit = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        const err = await res.json().catch(() => ({}));
+        logger.warn('getOrderById failed:', res.status, err);
+        return null;
+      }
+      const data: GetOrderResponse = await res.json();
+      return data;
+    } catch (e) {
+      logger.warn('getOrderById error:', e);
+      return null;
     }
   }
 }

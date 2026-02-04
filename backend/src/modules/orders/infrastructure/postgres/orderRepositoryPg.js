@@ -1,5 +1,8 @@
 /**
  * Postgres OrderRepository (infrastructure adapter).
+ * Implements OrderRepository port for CreateOrder use-case.
+ *
+ * @returns {import('../../application/ports').OrderRepository}
  */
 
 const { getClient, query } = require('../../../../config/database');

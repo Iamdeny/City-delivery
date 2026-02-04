@@ -220,6 +220,80 @@ class TrackingService {
     
     this.activeGeofences.set(orderId, geofenceState);
   }
+
+  /**
+   * Update courier location by User ID (wrapper for router)
+   */
+  async updateCourierLocationByUserId(userId, latitude, longitude, accuracy) {
+    try {
+      const courierResult = await query(
+        'SELECT id FROM couriers WHERE user_id = $1',
+        [userId]
+      );
+
+      if (courierResult.rows.length === 0) {
+        return { success: false, error: 'Courier profile not found' };
+      }
+
+      const courierId = courierResult.rows[0].id;
+      return await this.updateCourierLocation(courierId, latitude, longitude, accuracy);
+    } catch (error) {
+      logger.error('Error updating location by user ID:', error);
+      return { success: false, error: 'Internal server error' };
+    }
+  }
+
+  /**
+   * Get tracking info for an order (for customer)
+   */
+  async getOrderTracking(orderId, userId) {
+    try {
+       const orderResult = await query(
+        `SELECT o.id, o.courier_id, o.status,
+                c.current_location_lat, c.current_location_lng, c.last_seen,
+                u.name as courier_name
+         FROM orders o
+         LEFT JOIN couriers c ON o.courier_id = c.id
+         LEFT JOIN users u ON c.user_id = u.id
+         WHERE o.id = $1 AND o.client_id = $2`,
+        [orderId, userId]
+      );
+
+      if (orderResult.rows.length === 0) {
+        return { success: false, error: 'NOT_FOUND' };
+      }
+
+      const order = orderResult.rows[0];
+
+      if (!order.courier_id) {
+        return {
+          success: true,
+          tracking: null,
+          message: 'Курьер еще не назначен'
+        };
+      }
+
+      // Get additional info from memory cache if available
+      const cachedPosition = this.courierPositions.get(order.courier_id);
+
+      return {
+        success: true,
+        tracking: {
+          courierId: order.courier_id,
+          courierName: order.courier_name,
+          latitude: order.current_location_lat,
+          longitude: order.current_location_lng,
+          lastUpdate: order.last_seen,
+          speed: cachedPosition?.speed,
+          accuracy: cachedPosition?.accuracy,
+          status: order.status
+        }
+      };
+    } catch (error) {
+      logger.error('Error getting order tracking:', error);
+      return { success: false, error: 'Internal server error' };
+    }
+  }
   
   /**
    * Обновить ETA (Estimated Time of Arrival)

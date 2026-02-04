@@ -2,8 +2,19 @@
  * CreateOrder use-case (application layer).
  *
  * Depends ONLY on ports injected via constructor.
+ * @see ./ports.js for CreateOrderInput, CreateOrderResult, port types
  */
 
+/**
+ * @param {Object} deps
+ * @param {import('../ports').OrderRepository} deps.orderRepository
+ * @param {import('../ports').InventoryGateway} deps.inventoryGateway
+ * @param {import('../ports').QueuePublisher} deps.queuePublisher
+ * @param {import('../ports').DeliveryZoneService} deps.deliveryZoneService
+ * @param {Object} deps.orderDispatcher - legacy dispatcher (dispatchOrder)
+ * @param {{ log: function, error: function }} deps.logger
+ * @returns {{ execute: (input: import('../ports').CreateOrderInput) => Promise<import('../ports').CreateOrderResult> }}
+ */
 function createCreateOrderUseCase({
   orderRepository,
   inventoryGateway,
@@ -21,7 +32,8 @@ function createCreateOrderUseCase({
 
   return {
     /**
-     * @param {{ userId:number, items:Array<{productId:number,quantity:number}>, darkStoreId?:number, address:string, phone:string, comment?:string, latitude?:number, longitude?:number }} input
+     * @param {import('../ports').CreateOrderInput} input
+     * @returns {Promise<import('../ports').CreateOrderResult>}
      */
     async execute(input) {
       const { userId, items, darkStoreId: requestedDarkStoreId, address, phone, comment, latitude, longitude } = input;

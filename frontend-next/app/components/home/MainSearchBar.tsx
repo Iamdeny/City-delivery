@@ -25,8 +25,8 @@ export default function MainSearchBar() {
           type="text"
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          placeholder="Искать в Самокате"
-          className="w-full h-[44px] pl-12 pr-4 bg-[#f2f2f2] border-0 rounded-xl text-base font-normal text-[#1a1a1a] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:bg-white transition-all"
+          placeholder="Найти молоко, хлеб, сыр…"
+          className="w-full h-[44px] pl-12 pr-4 bg-[#f0f0f0] border-0 rounded-xl text-base font-normal text-[#1a1a1a] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all"
           style={{
             fontFamily: 'Inter, Avenir, Helvetica, Arial, sans-serif',
           }}

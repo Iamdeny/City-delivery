@@ -1,15 +1,58 @@
 /**
  * Orders HTTP interface.
  *
- * Only POST / is migrated to Clean Architecture use-case for now.
- * Other endpoints are delegated to legacy router to keep behavior stable.
+ * POST / and GET /, PATCH /:id/status use Clean Architecture use-cases.
+ * Request validation: Zod for create/update body; Zod for GET / query.
  */
 
 const express = require('express');
+const { z } = require('zod');
 const { authenticate, requireRole } = require('../../../../middleware/auth');
-const { validateCreateOrder, validateUpdateOrderStatus } = require('../../../../validators/order.validator');
-const legacyOrdersRouter = require('../../../../routes/orders');
+const {
+  validateCreateOrder,
+  validateUpdateOrderStatus,
+} = require('../../../../validators/order.validator');
 const { metrics } = require('../../../../utils/metrics');
+
+/** Zod: GET /api/orders query (list orders by store) */
+const listOrdersByStoreQuerySchema = z.object({
+  darkStoreId: z.coerce.number().int().positive('DARK_STORE_ID_REQUIRED'),
+  status: z.string().max(50).optional(),
+  q: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+/** Zod: path param order id (for PATCH/POST/GET :id/...) */
+const orderIdParamSchema = z.object({
+  id: z.coerce.number().int().positive('ORDER_ID_INVALID'),
+});
+
+/** Zod: PATCH /:id/status query (force override) */
+const updateStatusQuerySchema = z.object({
+  force: z
+    .union([
+      z.literal('1'),
+      z.literal('0'),
+      z.literal('true'),
+      z.literal('false'),
+    ])
+    .optional()
+    .transform((v) => v === '1' || (v && v.toLowerCase() === 'true')),
+});
+
+/** Zod: POST /:id/return body (partial return items) */
+const returnOrderBodySchema = z.object({
+  reason: z.string().max(1000).optional(),
+  items: z
+    .array(
+      z.object({
+        productId: z.number().int().positive(),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .optional(),
+});
 
 function parseIntParam(value, fallback) {
   const n = Number(value);
@@ -49,17 +92,24 @@ function createOrdersRouter({
   // GET /api/orders?darkStoreId=1&status=active|pending|...&q=...&limit=50&offset=0
   router.get('/', async (req, res, next) => {
     try {
-      const darkStoreId = parseIntParam(req.query.darkStoreId, null);
-      if (!darkStoreId || darkStoreId <= 0) {
-        return res.status(400).json({ success: false, error: 'DARK_STORE_ID_REQUIRED' });
+      const parsed = listOrdersByStoreQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        const first = parsed.error.errors[0];
+        const message = first?.message || 'VALIDATION_ERROR';
+        return res.status(400).json({
+          success: false,
+          error: message,
+          details: parsed.error.flatten(),
+        });
       }
-
-      const status = req.query.status ? String(req.query.status) : undefined;
-      const q = req.query.q ? String(req.query.q).slice(0, 200) : undefined;
-      const limit = parseIntParam(req.query.limit, 50);
-      const offset = parseIntParam(req.query.offset, 0);
-
-      const result = await listOrdersByStore.execute({ darkStoreId, status, q, limit, offset });
+      const { darkStoreId, status, q, limit, offset } = parsed.data;
+      const result = await listOrdersByStore.execute({
+        darkStoreId,
+        status,
+        q,
+        limit,
+        offset,
+      });
       return res.json(result);
     } catch (err) {
       return next(err);
@@ -79,12 +129,18 @@ function createOrdersRouter({
     validateUpdateOrderStatus,
     async (req, res, next) => {
       try {
-        const orderId = parseIntParam(req.params.id, null);
-        if (!orderId || orderId <= 0) {
-          return res.status(400).json({ success: false, error: 'ORDER_ID_INVALID' });
+        const paramParsed = orderIdParamSchema.safeParse(req.params);
+        const queryParsed = updateStatusQuerySchema.safeParse(req.query);
+        if (!paramParsed.success) {
+          return res.status(400).json({
+            success: false,
+            error: paramParsed.error.errors[0]?.message || 'ORDER_ID_INVALID',
+          });
         }
-
-        const force = String(req.query.force || '') === '1' || String(req.query.force || '').toLowerCase() === 'true';
+        const orderId = paramParsed.data.id;
+        const force = queryParsed.success
+          ? queryParsed.data.force === true
+          : false;
         const result = await updateOrderStatusUseCase.execute({
           actor: { id: req.user.id, role: req.user.role },
           orderId,
@@ -131,108 +187,147 @@ function createOrdersRouter({
 
         return res.status(result.status).json(result.body);
       } catch (err) {
-        metrics.inc('orders.status.change_error', { error: err?.name || 'Error' });
+        metrics.inc('orders.status.change_error', {
+          error: err?.name || 'Error',
+        });
         return next(err);
       }
     }
   );
 
   // Customer: cancel own order (safe path)
-  router.post('/:id/cancel', authenticate, requireRole('customer'), async (req, res, next) => {
-    try {
-      const orderId = parseIntParam(req.params.id, null);
-      if (!orderId || orderId <= 0) {
-        return res.status(400).json({ success: false, error: 'ORDER_ID_INVALID' });
+  router.post(
+    '/:id/cancel',
+    authenticate,
+    requireRole('customer'),
+    async (req, res, next) => {
+      try {
+        const paramParsed = orderIdParamSchema.safeParse(req.params);
+        if (!paramParsed.success) {
+          return res.status(400).json({
+            success: false,
+            error: paramParsed.error.errors[0]?.message || 'ORDER_ID_INVALID',
+          });
+        }
+        const orderId = paramParsed.data.id;
+        const result = await updateOrderStatusUseCase.execute({
+          actor: { id: req.user.id, role: req.user.role },
+          orderId,
+          nextStatus: 'cancelled',
+          force: false,
+        });
+
+        return res.status(result.status).json(result.body);
+      } catch (err) {
+        return next(err);
       }
-
-      const result = await updateOrderStatusUseCase.execute({
-        actor: { id: req.user.id, role: req.user.role },
-        orderId,
-        nextStatus: 'cancelled',
-        force: false,
-      });
-
-      return res.status(result.status).json(result.body);
-    } catch (err) {
-      return next(err);
     }
-  });
+  );
 
   // Ops: returns workflow (admin/manager)
   // POST /api/orders/:id/return { reason?: string, items?: [{productId,quantity}] }
-  router.post('/:id/return', authenticate, requireRole('admin', 'manager'), async (req, res, next) => {
-    try {
-      const orderId = parseIntParam(req.params.id, null);
-      if (!orderId || orderId <= 0) {
-        return res.status(400).json({ success: false, error: 'ORDER_ID_INVALID' });
-      }
+  router.post(
+    '/:id/return',
+    authenticate,
+    requireRole('admin', 'manager'),
+    async (req, res, next) => {
+      try {
+        const paramParsed = orderIdParamSchema.safeParse(req.params);
+        const bodyParsed = returnOrderBodySchema.safeParse(req.body || {});
+        if (!paramParsed.success) {
+          return res.status(400).json({
+            success: false,
+            error: paramParsed.error.errors[0]?.message || 'ORDER_ID_INVALID',
+          });
+        }
+        if (!bodyParsed.success) {
+          return res.status(400).json({
+            success: false,
+            error: 'VALIDATION_ERROR',
+            details: bodyParsed.error.flatten(),
+          });
+        }
+        const orderId = paramParsed.data.id;
+        const { reason, items } = bodyParsed.data;
+        if (!returnOrderUseCase) {
+          return res
+            .status(500)
+            .json({ success: false, error: 'RETURN_USE_CASE_MISSING' });
+        }
 
-      if (!returnOrderUseCase) {
-        // defensive (should never happen when wired)
-        return res.status(500).json({ success: false, error: 'RETURN_USE_CASE_MISSING' });
-      }
+        const result = await returnOrderUseCase.execute({
+          actor: { id: req.user.id, role: req.user.role },
+          orderId,
+          reason,
+          items,
+        });
 
-      const result = await returnOrderUseCase.execute({
-        actor: { id: req.user.id, role: req.user.role },
-        orderId,
-        reason: req.body?.reason,
-        items: req.body?.items,
-      });
+        if (result?.ok) {
+          await audit(req, {
+            action: 'order.return',
+            entity_type: 'order',
+            entity_id: String(orderId),
+            meta: {
+              result: 'ok',
+              reason,
+              items: items ?? null,
+              delta: result.body?.delta,
+            },
+          });
+        } else {
+          await audit(req, {
+            action: 'order.return',
+            entity_type: 'order',
+            entity_id: String(orderId),
+            meta: {
+              result: 'fail',
+              error: result?.body?.error || 'UNKNOWN',
+              reason,
+              items: items ?? null,
+            },
+          });
+        }
 
-      if (result?.ok) {
+        return res.status(result.status).json(result.body);
+      } catch (err) {
         await audit(req, {
           action: 'order.return',
           entity_type: 'order',
-          entity_id: String(orderId),
-          meta: {
-            result: 'ok',
-            reason: req.body?.reason,
-            items: Array.isArray(req.body?.items) ? req.body.items : null,
-            delta: result.body?.delta,
-          },
+          entity_id: String(req.params?.id ?? ''),
+          meta: { result: 'error', error: err?.name || 'Error' },
         });
-      } else {
-        await audit(req, {
-          action: 'order.return',
-          entity_type: 'order',
-          entity_id: String(orderId),
-          meta: {
-            result: 'fail',
-            error: result?.body?.error || 'UNKNOWN',
-            reason: req.body?.reason,
-            items: Array.isArray(req.body?.items) ? req.body.items : null,
-          },
-        });
+        return next(err);
       }
-
-      return res.status(result.status).json(result.body);
-    } catch (err) {
-      await audit(req, {
-        action: 'order.return',
-        entity_type: 'order',
-        entity_id: String(req.params?.id ?? ''),
-        meta: { result: 'error', error: err?.name || 'Error' },
-      });
-      return next(err);
     }
-  });
+  );
 
   // Ops: return summary per order (ordered/returned/remaining)
-  router.get('/:id/return-summary', authenticate, requireRole('admin', 'manager'), async (req, res, next) => {
-    try {
-      const orderId = parseIntParam(req.params.id, null);
-      if (!orderId || orderId <= 0) {
-        return res.status(400).json({ success: false, error: 'ORDER_ID_INVALID' });
+  router.get(
+    '/:id/return-summary',
+    authenticate,
+    requireRole('admin', 'manager'),
+    async (req, res, next) => {
+      try {
+        const paramParsed = orderIdParamSchema.safeParse(req.params);
+        if (!paramParsed.success) {
+          return res.status(400).json({
+            success: false,
+            error: paramParsed.error.errors[0]?.message || 'ORDER_ID_INVALID',
+          });
+        }
+        const orderId = paramParsed.data.id;
+        if (!getReturnSummary) {
+          return res
+            .status(500)
+            .json({ success: false, error: 'RETURN_SUMMARY_MISSING' });
+        }
+        const result = await getReturnSummary.execute({ orderId });
+        return res.status(result.status).json(result.body);
+      } catch (err) {
+        return next(err);
       }
-      if (!getReturnSummary) {
-        return res.status(500).json({ success: false, error: 'RETURN_SUMMARY_MISSING' });
-      }
-      const result = await getReturnSummary.execute({ orderId });
-      return res.status(result.status).json(result.body);
-    } catch (err) {
-      return next(err);
     }
-  });
+  );
 
   // Clean Architecture: create order
   router.post(
@@ -242,7 +337,15 @@ function createOrdersRouter({
     validateCreateOrder,
     async (req, res, next) => {
       try {
-        const { items, address, phone, comment, latitude, longitude, darkStoreId } = req.body;
+        const {
+          items,
+          address,
+          phone,
+          comment,
+          latitude,
+          longitude,
+          darkStoreId,
+        } = req.body;
         const userId = req.user.id;
 
         const result = await createOrderUseCase.execute({
@@ -257,7 +360,9 @@ function createOrdersRouter({
         });
 
         if (result.ok) {
-          metrics.inc('orders.create.ok', { darkStoreId: darkStoreId ?? 'auto' });
+          metrics.inc('orders.create.ok', {
+            darkStoreId: darkStoreId ?? 'auto',
+          });
         } else {
           metrics.inc('orders.create.fail', {
             darkStoreId: darkStoreId ?? 'auto',
@@ -268,19 +373,13 @@ function createOrdersRouter({
 
         return res.status(result.status).json(result.body);
       } catch (err) {
-        metrics.inc('orders.create.error', { error: err?.name || 'Error' });
         return next(err);
       }
     }
   );
-
-  // Delegate everything else to legacy router (includes GET /my-orders, etc.)
-  router.use(legacyOrdersRouter);
-
   return router;
 }
 
 module.exports = {
   createOrdersRouter,
 };
-

@@ -8,6 +8,8 @@
     "migrate": "node src/database/migrate.js",
     "test:db": "node src/database/test-connection.js",
     "test:api": "node scripts/quick-test.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "seed": "node scripts/seed-data.js",
     "arch:lint": "node scripts/arch-lint.js"
   },
@@ -29,6 +31,10 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "nodemon": "^2.0.0"
+    "@types/express": "^5.0.6",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^4.0.18",
+    "nodemon": "^2.0.0",
+    "vitest": "^4.0.18"
   }
 }

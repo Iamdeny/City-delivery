@@ -1,6 +1,7 @@
 /**
  * AssignCourierToOrder (application use-case)
  * Sets/clears courier_id on an order (Ops action).
+ * @see ../ports.js for AssignCourierToOrderInput, AssignCourierToOrderResult
  */
 
 const TERMINAL = new Set(['delivered', 'cancelled']);
@@ -13,16 +14,20 @@ function normalizeCourierId(v) {
   return Math.floor(n);
 }
 
+/**
+ * @param {Object} deps
+ * @param {Object} deps.orderCourierRepository - getById, ensureCourierByUserId, setCourier
+ * @param {{ append: function }|null} [deps.auditLogger]
+ * @param {{ info?: function }} [deps.logger]
+ * @returns {{ execute: (params: import('../ports').AssignCourierToOrderInput) => Promise<import('../ports').AssignCourierToOrderResult> }}
+ */
 function createAssignCourierToOrderUseCase({ orderCourierRepository, auditLogger, logger }) {
   if (!orderCourierRepository) throw new Error('AssignCourierToOrder: orderCourierRepository is required');
 
   return {
     /**
-     * @param {{
-     *  actor: { id:number, role:string },
-     *  orderId: number,
-     *  courierId: number|null // courier USER id (users.id). Will be mapped to couriers.id.
-     * }} params
+     * @param {import('../ports').AssignCourierToOrderInput} params
+     * @returns {Promise<import('../ports').AssignCourierToOrderResult>}
      */
     async execute(params) {
       const orderId = Math.floor(Number(params.orderId));
