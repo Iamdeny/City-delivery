@@ -123,6 +123,56 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * Рекомендации для корзины (Советуем)
+ * GET /api/products/recommendations?exclude=1,2,3&limit=6
+ * exclude — id товаров, уже в корзине (через запятую)
+ * limit — макс. количество (по умолчанию 6)
+ */
+router.get('/recommendations', async (req, res) => {
+  try {
+    const excludeRaw = req.query.exclude;
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 6));
+    const excludeIds = excludeRaw
+      ? String(excludeRaw).split(',').map(s => parseInt(s.trim(), 10)).filter(n => Number.isInteger(n) && n > 0)
+      : [];
+
+    let products = [];
+    try {
+      let queryText = 'SELECT * FROM products WHERE in_stock = true AND (stock_quantity IS NULL OR stock_quantity > 0)';
+      const params = [];
+      let paramIndex = 1;
+
+      if (excludeIds.length > 0) {
+        queryText += ` AND id NOT IN (${excludeIds.map((_, i) => `$${paramIndex + i}`).join(',')})`;
+        params.push(...excludeIds);
+        paramIndex += excludeIds.length;
+      }
+
+      queryText += ' ORDER BY RANDOM() LIMIT $' + paramIndex;
+      params.push(limit);
+
+      const result = await query(queryText, params);
+      products = result.rows;
+    } catch (dbError) {
+      products = [...mockProducts]
+        .filter(p => !excludeIds.includes(p.id))
+        .filter(p => p.in_stock)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, limit);
+    }
+
+    res.json({
+      success: true,
+      products,
+      count: products.length,
+    });
+  } catch (error) {
+    logger.error('Ошибка получения рекомендаций:', error);
+    res.json({ success: true, products: [], count: 0 });
+  }
+});
+
+/**
  * Получение товара по ID
  */
 router.get('/:id', async (req, res) => {

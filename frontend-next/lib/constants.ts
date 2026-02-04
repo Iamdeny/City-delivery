@@ -19,6 +19,7 @@ export const API_CONFIG = {
     TELEGRAM_AUTH: '/api/auth/telegram',
     PRODUCTS: '/api/products',
     ORDERS: '/api/orders',
+    CART: '/api/cart',
     CATEGORIES: '/api/products/categories',
     HEALTH: '/api/health',
   },

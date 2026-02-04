@@ -408,7 +408,12 @@ function ProductCardPremium({
           </div>
 
           {/* Desktop: + В корзину / qty controls */}
-          <div className="hidden lg:block">
+          <div
+            className="hidden lg:block"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
             <AnimatePresence mode="wait">
               {cartQuantity > 0 ? (
                 <motion.div

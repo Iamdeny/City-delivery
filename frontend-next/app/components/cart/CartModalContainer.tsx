@@ -21,7 +21,7 @@ export default function CartModalContainer({
   onCheckoutHref = '/order',
 }: CartModalContainerProps) {
   const router = useRouter();
-  const { cart, totalAmount, totalItems, hasItems, updateQuantity, removeFromCart, clearCart } =
+  const { cart, totalAmount, totalItems, hasItems, addToCart, updateQuantity, removeFromCart, clearCart } =
     useCart();
   const { showNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
@@ -60,6 +60,7 @@ export default function CartModalContainer({
       loading={loading}
       onUpdateQuantity={updateQuantity}
       onRemoveItem={removeFromCart}
+      onAddToCart={addToCart}
       onPlaceOrder={handlePlaceOrder}
       onClearCart={clearCart}
       onShowNotification={showNotification}

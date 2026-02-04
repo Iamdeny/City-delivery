@@ -6,13 +6,18 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import Image from 'next/image';
 import { X, ChevronRight } from 'lucide-react';
 import CartItems from './CartItems';
 import { CartFooter } from './CartFooter';
 import { CartEmptyState } from './CartEmptyState';
 import { CartDeliveryCard, type CartDeliveryStatus } from './CartDeliveryCard';
 import { CartSkeleton } from '../skeleton/CartSkeleton';
-import type { CartItem } from '@/types';
+import { fetchRecommendations } from '@/app/services/recommendationsService';
+import { formatPriceWithCurrency } from '@/lib/format';
+import { getPlaceholderByCategory } from '@/lib/placeholders';
+import { isValidImageUrl } from '@/lib/utils';
+import type { CartItem, Product } from '@/types';
 import type { OrderResponse } from '@/app/services/orderService';
 
 interface CartModalProps {
@@ -25,6 +30,7 @@ interface CartModalProps {
   loading: boolean;
   onUpdateQuantity: (id: number, quantity: number) => void;
   onRemoveItem: (id: number) => void;
+  onAddToCart?: (product: Product) => void;
   onPlaceOrder: (orderData: {
     phone: string;
     address: string;
@@ -50,6 +56,7 @@ const CartModal: React.FC<CartModalProps> = ({
   loading,
   onUpdateQuantity,
   onRemoveItem,
+  onAddToCart,
   onPlaceOrder,
   onClearCart,
   onShowNotification,
@@ -61,7 +68,21 @@ const CartModal: React.FC<CartModalProps> = ({
   const [deliveryStatus, setDeliveryStatus] = useState<CartDeliveryStatus>({ ok: null, message: null });
   const [deliveryAddress, setDeliveryAddress] = useState('Выберите адрес');
   const [deliveryTime, setDeliveryTime] = useState('15 мин');
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+
+  const cartIds = cart.map((item) => item.id).join(',');
+
+  // Рекомендации с бэкенда (Советуем) — при открытой корзине с товарами
+  useEffect(() => {
+    if (!isOpen || !hasItems || !onAddToCart) return;
+    setLoadingRecommendations(true);
+    const excludeIds = cart.map((item) => item.id);
+    fetchRecommendations(excludeIds, 6)
+      .then(setRecommendedProducts)
+      .finally(() => setLoadingRecommendations(false));
+  }, [isOpen, hasItems, cartIds]);
 
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -234,46 +255,68 @@ const CartModal: React.FC<CartModalProps> = ({
                     totalItems={totalItems}
                   />
 
-                  {/* Советуем — как на референсе: картинка, цена, название, кнопка + Добавить */}
+                  {/* Советуем — рекомендации с бэкенда */}
                   <div className="px-5 py-4 border-t border-[#eee]">
                     <h3 className="text-[20px] font-bold text-[#1a1a1a] mb-3 leading-tight">
                       Советуем
                     </h3>
-                    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                      <button
-                        type="button"
-                        className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-[#eee] text-left active:scale-[0.98] transition-transform"
-                      >
-                        <div className="w-full h-20 rounded-t-2xl bg-[#f0f2f5]" />
-                        <div className="p-2.5">
-                          <div className="text-[15px] font-bold text-[#1a1a1a]">39 ₽</div>
-                          <div className="text-[13px] font-normal text-[#1a1a1a] truncate mt-0.5">Вода негазированная</div>
-                          <div className="mt-2 flex items-center justify-center gap-1 rounded-xl bg-[#e0f2ff] py-2 text-[13px] font-semibold text-[#2563eb]">+ Добавить</div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-[#eee] text-left active:scale-[0.98] transition-transform"
-                      >
-                        <div className="w-full h-20 rounded-t-2xl bg-[#f0f2f5]" />
-                        <div className="p-2.5">
-                          <div className="text-[15px] font-bold text-[#1a1a1a]">29 ₽</div>
-                          <div className="text-[13px] font-normal text-[#1a1a1a] truncate mt-0.5">Жевательная резинка</div>
-                          <div className="mt-2 flex items-center justify-center gap-1 rounded-xl bg-[#e0f2ff] py-2 text-[13px] font-semibold text-[#2563eb]">+ Добавить</div>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-[#eee] text-left active:scale-[0.98] transition-transform"
-                      >
-                        <div className="w-full h-20 rounded-t-2xl bg-[#f0f2f5]" />
-                        <div className="p-2.5">
-                          <div className="text-[15px] font-bold text-[#1a1a1a]">85 ₽</div>
-                          <div className="text-[13px] font-normal text-[#1a1a1a] truncate mt-0.5">Чипсы картофельные</div>
-                          <div className="mt-2 flex items-center justify-center gap-1 rounded-xl bg-[#e0f2ff] py-2 text-[13px] font-semibold text-[#2563eb]">+ Добавить</div>
-                        </div>
-                      </button>
-                    </div>
+                    {loadingRecommendations ? (
+                      <div className="flex gap-3 overflow-x-auto pb-1">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-[#f0f2f5] animate-pulse">
+                            <div className="w-full h-20 rounded-t-2xl bg-[#e8e8e8]" />
+                            <div className="p-2.5 space-y-2">
+                              <div className="h-4 bg-[#e8e8e8] rounded w-12" />
+                              <div className="h-3 bg-[#e8e8e8] rounded w-full" />
+                              <div className="h-9 bg-[#e8e8e8] rounded-xl w-full" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : recommendedProducts.length > 0 ? (
+                      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                        {recommendedProducts.map((product) => {
+                          const imageSrc = product.image && (product.image.startsWith('data:') || isValidImageUrl(product.image))
+                            ? product.image
+                            : getPlaceholderByCategory(product.category ?? 'Прочее');
+                          const isDataUri = imageSrc.startsWith('data:');
+                          return (
+                            <button
+                              key={product.id}
+                              type="button"
+                              className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-[#eee] text-left active:scale-[0.98] transition-transform"
+                              onClick={() => onAddToCart?.(product)}
+                            >
+                              <div className="relative w-full h-20 rounded-t-2xl bg-[#f0f2f5] overflow-hidden">
+                                {isDataUri ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={imageSrc} alt={product.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Image
+                                    src={imageSrc}
+                                    alt={product.name}
+                                    fill
+                                    sizes="120px"
+                                    className="object-cover"
+                                  />
+                                )}
+                              </div>
+                              <div className="p-2.5">
+                                <div className="text-[15px] font-bold text-[#1a1a1a]">
+                                  {formatPriceWithCurrency(Number(product.price) || 0)}
+                                </div>
+                                <div className="text-[13px] font-normal text-[#1a1a1a] truncate mt-0.5" title={product.name}>
+                                  {product.name}
+                                </div>
+                                <div className="mt-2 flex items-center justify-center gap-1 rounded-xl bg-[#e0f2ff] py-2 text-[13px] font-semibold text-[#2563eb]">
+                                  + Добавить
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
                   
                   {/* Промокод и бонусы — по референсу */}
