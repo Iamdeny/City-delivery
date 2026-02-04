@@ -207,7 +207,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
         transition={{ duration: 0.3, ease: 'easeOut' }}
       >
         <button 
-          className="absolute top-5 right-5 bg-none border-none text-[28px] cursor-pointer text-gray-500 p-1 leading-none w-8 h-8 flex items-center justify-center rounded-full transition-all hover:text-gray-900 hover:bg-gray-100 active:scale-95" 
+          className="absolute top-4 right-4 bg-none border-none text-[22px] cursor-pointer text-gray-500 leading-none min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-full transition-all hover:text-gray-900 hover:bg-gray-100 active:scale-95"
           onClick={onClose} 
           aria-label="Закрыть"
         >
@@ -217,7 +217,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
         <h2 className="m-0 mb-2 text-[24px] font-extrabold text-gray-900 tracking-[-0.3px]">
           Вход или регистрация
         </h2>
-        <p className="mb-6 text-[13px] text-gray-600">
+        <p className="mb-6 text-base text-gray-600 leading-relaxed">
           Мы отправим код подтверждения на ваш номер
         </p>
 

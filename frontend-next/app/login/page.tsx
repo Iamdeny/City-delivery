@@ -29,8 +29,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="container mx-auto max-w-md">
+    <div className="min-h-screen bg-gray-50 min-w-[320px] safe-top safe-bottom safe-x">
+      <div className="pt-4 pb-6 px-4 w-full max-w-md mx-auto">
         <div className="hidden lg:block mb-4">
           <Breadcrumbs />
         </div>

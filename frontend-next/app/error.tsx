@@ -22,7 +22,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 pt-[var(--safe-top)] pb-[var(--safe-bottom)]">
       <div className="max-w-md w-full text-center">
         <div className="mb-6 flex justify-center">
           <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">

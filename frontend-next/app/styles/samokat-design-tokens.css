@@ -46,6 +46,11 @@
   
   /* === SPACING === */
   
+  /* Content padding: больше «воздуха» от краёв (аудит 2026) */
+  --content-padding-x: 20px;
+  --content-padding-x-sm: 24px;
+  --content-padding-x-lg: 32px;
+
   /* Padding */
   --samokat-padding-xs: 4px;
   --samokat-padding-sm: 8px;
@@ -113,4 +118,14 @@
   --samokat-breakpoint-md: 768px;
   --samokat-breakpoint-lg: 1024px;
   --samokat-breakpoint-xl: 1280px;
+
+  /* === НОРМЫ 2024–2026 (WCAG 2.2, iOS/Android, малые экраны) === */
+  /* Минимальная ширина viewport для старых устройств (iPhone SE, малые Android) */
+  --viewport-min-width: 320px;
+  /* Минимальный размер зоны нажатия — WCAG 2.2 Level AAA (удобно на touch) */
+  --touch-target-min: 44px;
+  /* Минимальный размер шрифта основного текста (избегаем авто-зума iOS при фокусе) */
+  --font-size-body-min: 16px;
+  /* Минимальная высота строки для читаемости */
+  --line-height-body-min: 1.5;
 }

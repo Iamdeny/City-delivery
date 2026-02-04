@@ -6,10 +6,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CartProvider } from './contexts/CartContext';
 import { UpdateAvailableBanner } from './system/UpdateAvailableBanner';
 import { InstallPromptBanner } from './system/InstallPromptBanner';
+import { PageTransition } from './components/shared/PageTransition';
 
 // Header остается статическим, так как он критичен для consumer UX
 import HeaderPremium from './components/header/HeaderPremium';
-import MobileBottomNav from './components/mobile/MobileBottomNav';
+import { BottomNav } from './components/home/premium';
 
 // Динамические импорты для consumer shell (не должны тянуться в ops)
 const Footer = dynamic(() => import('./components/footer/Footer'), { ssr: true });
@@ -78,15 +79,20 @@ export function AppShellClient({ children }: { children: React.ReactNode }) {
   const isOrderPage = pathname === '/order' || pathname.startsWith('/order/');
   const isProfilePage = pathname === '/profile' || pathname.startsWith('/profile/');
   const isCatalogPage = pathname === '/products' || pathname.startsWith('/products');
+  const isCartPage = pathname === '/cart';
 
   return (
     <CartProvider>
-      {/* Header скрыт на главной, каталоге, оформлении заказа и в профиле */}
-      {!isHomePage && !isOrderPage && !isProfilePage && !isCatalogPage && <HeaderPremium />}
-      <main className="flex-1 pb-[56px]">{children}</main>
+      {/* Header скрыт на главной, каталоге, корзине, оформлении заказа и в профиле */}
+      {!isHomePage && !isOrderPage && !isProfilePage && !isCatalogPage && !isCartPage && <HeaderPremium />}
+      <main className="flex-1 pb-[calc(84px+var(--safe-bottom))] lg:pb-0">
+        <PageTransition>{children}</PageTransition>
+      </main>
       {/* Footer временно отключён (©, телефон, время работы, Сервер подключен) */}
       {/* {!isHomePage && <Footer />} */}
-      <MobileBottomNav />
+      <div className="lg:hidden">
+        <BottomNav />
+      </div>
       <NotificationContainer />
       {updateReady ? (
         <UpdateAvailableBanner

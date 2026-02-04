@@ -5,7 +5,7 @@ import { ChevronRight, ExternalLink } from 'lucide-react';
 
 export default function ProfileAboutPage() {
   return (
-    <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20">
+    <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20 pt-[var(--safe-top)]">
       <div className="max-w-xl mx-auto px-4 pt-5">
         <h1 className="text-[22px] font-extrabold text-[#1a1a1a] mb-4">
           О приложении

@@ -2,7 +2,7 @@
 
 export default function ProfileOrdersPage() {
   return (
-    <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20">
+    <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20 pt-[var(--safe-top)]">
       <div className="max-w-xl mx-auto px-4 pt-5">
         {/* Заголовок и табы */}
         <header className="mb-4">

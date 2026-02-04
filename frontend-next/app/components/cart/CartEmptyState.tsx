@@ -19,15 +19,14 @@ export function CartEmptyState({
 }: CartEmptyStateProps) {
   return (
     <motion.div
-      className="flex flex-col items-center justify-center py-12 px-6 min-h-[min(400px,60vh)] text-center"
+      className="flex flex-col items-center justify-center py-16 px-5 min-h-[min(400px,60vh)] text-center"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex flex-col items-center gap-4 max-w-md">
-        {/* Иконка */}
+      <div className="flex flex-col items-center gap-5 max-w-md">
         <motion.div
-          className="text-gray-300 mb-2"
+          className="text-gray-300"
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
@@ -35,16 +34,14 @@ export function CartEmptyState({
           <ShoppingBag size={getIconSize('2xl')} strokeWidth={1.5} />
         </motion.div>
 
-        {/* Текст */}
-        <h2 className="text-2xl font-bold text-gray-900 m-0">Корзина пуста</h2>
-        <p className="text-base text-gray-600 m-0 leading-relaxed">
+        <h2 className="text-[22px] font-extrabold text-[#1a1a1a] m-0 leading-tight">Корзина пуста</h2>
+        <p className="text-[15px] text-[#5a5a5a] m-0 leading-relaxed">
           Добавьте товары из каталога, чтобы начать покупки
         </p>
 
-        {/* Кнопка "Перейти к покупкам" */}
         {onGoToShopping && (
           <motion.button
-            className="flex items-center gap-2 py-3.5 px-7 mt-2 border-none rounded-[28px] bg-blue-600 text-white text-base font-semibold cursor-pointer transition-all shadow-sm hover:bg-blue-700 hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
+            className="flex items-center gap-2 py-4 px-8 rounded-2xl bg-blue-600 text-white text-[16px] font-semibold cursor-pointer transition-all shadow-sm hover:bg-blue-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
             onClick={onGoToShopping}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

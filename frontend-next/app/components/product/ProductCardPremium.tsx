@@ -197,15 +197,26 @@ function ProductCardPremium({
         if (!onQuickView) return;
         if (e.key === 'Enter' || e.key === ' ') openQuickView();
       }}
-      className={`bg-white border-0 overflow-hidden flex flex-col cursor-pointer relative
-                  transition-[transform,box-shadow] duration-200
-                  active:scale-[0.99]
+      className={`bg-white rounded-2xl overflow-hidden flex flex-col cursor-pointer relative p-3
+                  shadow-sm
                   ${isInCart ? 'ring-1 ring-blue-200' : ''}`}
-      initial={shouldAnimate ? { opacity: 0, y: 20 } : undefined}
-      animate={{ opacity: 1, y: 0 }}
-      exit={shouldAnimate ? { opacity: 0, scale: 0.9 } : undefined}
-      whileHover={shouldAnimate ? { y: -2 } : undefined}
-      transition={shouldAnimate ? { duration: 0.2 } : undefined}
+      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+      initial={shouldAnimate ? { opacity: 0, y: 12, scale: 0.96 } : undefined}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={shouldAnimate ? { opacity: 0, scale: 0.9, y: -8 } : undefined}
+      whileHover={shouldAnimate ? { 
+        y: -4, 
+        scale: 1.01,
+        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+        transition: { duration: 0.2, ease: 'easeOut' }
+      } : undefined}
+      whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
+      transition={shouldAnimate ? { 
+        type: 'spring',
+        stiffness: 300,
+        damping: 25,
+        mass: 0.8
+      } : undefined}
     >
       {/* Image Container (Samokat-like) */}
       <div className="relative w-full aspect-square bg-[#f2f2f2] overflow-hidden rounded-[18px]" onClick={handleQuickView}>
@@ -312,9 +323,9 @@ function ProductCardPremium({
       </div>
 
       {/* Content (Samokat-like typography) */}
-      <div className="px-0 pb-0 pt-0 flex flex-col gap-0 flex-1">
+      <div className="px-0 pb-0 pt-2 flex flex-col gap-0 flex-1">
         {/* Name */}
-        <h3 className="text-[13px] sm:text-[14px] font-medium text-gray-800 leading-snug m-0 pt-[6px] line-clamp-2" title={product.name}>
+        <h3 className="text-[13px] sm:text-[14px] font-medium text-gray-800 leading-snug m-0 line-clamp-2" title={product.name}>
           {product.name}
         </h3>
 
@@ -325,11 +336,11 @@ function ProductCardPremium({
 
         {/* Footer: price + CTA (Banani-style) */}
         <div className="flex items-center justify-between gap-2.5 mt-[6px]">
-          <div className="flex flex-col leading-none">
+          <div className="flex flex-col leading-none min-w-0 flex-1">
             {hasDiscount && priceUi?.hasDiscount ? (
-              <div className="flex items-baseline gap-1">
-                <span className="text-[13px] text-gray-500 line-through">{priceUi.original}</span>
-                <span className="text-[15px] font-extrabold text-[#1a1a1a]">
+              <div className="flex items-baseline gap-2.5 flex-wrap">
+                <span className="text-[13px] text-gray-500 line-through whitespace-nowrap">{priceUi.original}</span>
+                <span className="text-[15px] font-extrabold text-[#1a1a1a] whitespace-nowrap">
                   {priceUi.final}
                 </span>
               </div>
@@ -351,31 +362,43 @@ function ProductCardPremium({
               {cartQuantity > 0 ? (
                 <motion.div
                   key="quantity-controls-mobile"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  initial={{ scale: 0.8, opacity: 0, rotate: -5 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  exit={{ scale: 0.8, opacity: 0, rotate: 5 }}
+                  transition={{ 
+                    type: 'spring',
+                    stiffness: 400,
+                    damping: 20
+                  }}
                 >
                   <QuantityControls
                     quantity={cartQuantity}
                     onIncrement={handleIncrement}
                     onDecrement={handleDecrement}
+                    min={0}
+                    max={99}
                     size="sm"
                     variant="modern"
                     className="shadow-sm bg-white/90 backdrop-blur-md"
-                    max={99}
                   />
                 </motion.div>
               ) : (
                 <motion.button
                   key="add-button-mobile"
                   type="button"
-                  className="flex items-center justify-center px-3 h-9 rounded-full bg-blue-600 text-white text-[13px] font-semibold border-none cursor-pointer shadow-sm transition-all flex-shrink-0 active:scale-95 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center px-3 h-9 rounded-full bg-blue-600 text-white text-[13px] font-semibold border-none cursor-pointer shadow-sm flex-shrink-0 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                   onClick={handleAddToCart}
                   disabled={!product.inStock}
-                  initial={{ scale: 0.9, opacity: 0 }}
+                  initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  whileHover={{ scale: 1.05, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)' }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ 
+                    type: 'spring',
+                    stiffness: 400,
+                    damping: 17
+                  }}
                   aria-label={`Добавить ${product.name} в корзину`}
                 >
                   + В корзину
@@ -390,18 +413,23 @@ function ProductCardPremium({
               {cartQuantity > 0 ? (
                 <motion.div
                   key="quantity-controls"
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                  initial={{ scale: 0.7, opacity: 0, rotate: -8 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  exit={{ scale: 0.7, opacity: 0, rotate: 8 }}
+                  transition={{ 
+                    type: 'spring', 
+                    stiffness: 500, 
+                    damping: 22
+                  }}
                 >
                   <QuantityControls
                     quantity={cartQuantity}
                     onIncrement={handleIncrement}
                     onDecrement={handleDecrement}
+                    min={0}
+                    max={99}
                     size="md"
                     variant="premium"
-                    max={99}
                   />
                 </motion.div>
               ) : (

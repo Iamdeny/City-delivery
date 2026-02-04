@@ -2,7 +2,7 @@
 
 export default function SearchScreenPage() {
   return (
-    <div className="min-h-[var(--app-height,100vh)] bg-white pb-20">
+    <div className="min-h-[var(--app-height,100vh)] bg-white pb-20 pt-[var(--safe-top)]">
       <div className="max-w-xl mx-auto px-4 pt-5">
         {/* Верхняя панель с полем поиска и кнопкой Отмена */}
         <header className="mb-4 flex items-center gap-3">

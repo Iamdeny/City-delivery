@@ -37,16 +37,15 @@ export function CartFooter({ totalAmount, onCheckout, disabled = false }: CartFo
   const isDisabled = disabled || !isWorkingHours;
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-10 px-4 pt-4 pb-[max(32px,calc(var(--safe-bottom)+16px))]">
-      {/* Banani: Оплатить X ₽ */}
+    <div className="sticky bottom-0 left-0 right-0 bg-white z-10 px-5 pt-4 pb-[max(24px,calc(var(--safe-bottom)+16px))]">
       <button
         onClick={onCheckout}
         disabled={isDisabled}
-        className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all rounded-2xl px-6 py-4 flex items-center justify-between active:scale-[0.98]"
+        className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] disabled:bg-[#d1d5db] disabled:cursor-not-allowed transition-all rounded-2xl px-6 py-4 min-h-[56px] flex items-center justify-between active:scale-[0.99]"
         aria-label={`Оплатить ${formattedTotal}`}
       >
-        <span className="text-[16px] font-extrabold text-white">Оплатить</span>
-        <span className="text-[16px] font-extrabold text-white tabular-nums">{formattedTotal}</span>
+        <span className="text-[16px] font-bold text-white">Оплатить</span>
+        <span className="text-[16px] font-bold text-white tabular-nums">{formattedTotal}</span>
       </button>
     </div>
   );

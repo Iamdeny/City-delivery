@@ -57,7 +57,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <Suspense fallback={
-        <div className="container mx-auto px-4 py-6">
+        <div className="max-w-[1440px] mx-auto content-x py-6">
           <div className="flex gap-6">
             <div className="hidden lg:block w-64">
               <div className="bg-white rounded-lg p-4 space-y-2 animate-pulse">

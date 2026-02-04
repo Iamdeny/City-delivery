@@ -47,10 +47,16 @@ export default function NotificationContainer() {
         {notifications.map((notification) => (
           <motion.div
             key={notification.id}
-            initial={{ x: 400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 400, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            layout
+            initial={{ x: 400, opacity: 0, scale: 0.9 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: 400, opacity: 0, scale: 0.9 }}
+            transition={{ 
+              type: 'spring',
+              stiffness: 300,
+              damping: 25,
+              mass: 0.8
+            }}
             className={`flex items-start p-3.5 rounded-lg shadow-lg cursor-pointer transition-transform duration-300 hover:-translate-x-1 backdrop-blur-md border border-white/10 ${getNotificationStyles(
               notification.type
             )}`}

@@ -152,7 +152,7 @@ function ProductGrid({
   }
 
   return (
-    <div className="flex-1 p-3 sm:p-4 lg:p-6 bg-transparent lg:bg-transparent rounded-none lg:rounded-lg shadow-none lg:shadow-none">
+    <div className="flex-1 px-5 sm:px-6 lg:px-8 pt-3 pb-3 sm:pt-4 sm:pb-4 lg:pt-6 lg:pb-6 bg-transparent lg:bg-transparent rounded-none lg:rounded-lg shadow-none lg:shadow-none">
       <div className="hidden lg:flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
         <h2 className="m-0 text-[#1a1a1a] text-[22px] font-extrabold">Товары</h2>
         <div className="px-4 py-2 bg-white text-[#404040] rounded-full text-sm font-semibold border border-gray-200">

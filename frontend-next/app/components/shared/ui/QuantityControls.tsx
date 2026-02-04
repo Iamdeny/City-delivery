@@ -22,6 +22,8 @@ interface QuantityControlsProps {
   variant?: 'default' | 'modern' | 'premium';
   className?: string;
   disabled?: boolean;
+  /** Только добавление: скрыть кнопку «минус», уменьшать нельзя */
+  addOnly?: boolean;
 }
 
 const sizeClasses = {

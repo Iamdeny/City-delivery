@@ -4,6 +4,8 @@
 
 /* Design Tokens для стиля Самоката */
 @import './styles/samokat-design-tokens.css';
+/* Premium 2026 (Instacart / DoorDash / Uber Eats) */
+@import './styles/premium-2026.css';
 
 :root {
   --background: #ffffff;
@@ -39,6 +41,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+html {
+  /* Поддержка старых мобильных с малым разрешением (320px и выше) */
+  min-width: var(--viewport-min-width, 320px);
+}
+
 html,
 body {
   height: 100%;
@@ -55,7 +62,13 @@ body.app-body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* iOS Safari: prevent auto-zoom on focus (inputs < 16px). */
+/* Нормы 2024–2026: минимум 16px для полей ввода (iOS не зумит при фокусе, читаемо на малых экранах) */
+input,
+select,
+textarea {
+  font-size: max(var(--font-size-body-min, 16px), 1rem);
+}
+
 @supports (-webkit-touch-callout: none) {
   input,
   select,
@@ -74,6 +87,26 @@ body.app-body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Единые горизонтальные отступы контента в стиле Самоката */
+  .content-x {
+    padding-left: var(--content-padding-x);
+    padding-right: var(--content-padding-x);
+  }
+
+  @media (min-width: 640px) {
+    .content-x {
+      padding-left: var(--content-padding-x-sm);
+      padding-right: var(--content-padding-x-sm);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .content-x {
+      padding-left: var(--content-padding-x-lg);
+      padding-right: var(--content-padding-x-lg);
+    }
   }
 
   /* Safe-area helpers (iOS notch / home indicator) */

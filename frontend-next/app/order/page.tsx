@@ -87,7 +87,7 @@ export default function OrderPage() {
 
   if (orderPlaced) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 pt-[max(1rem,calc(var(--safe-top)+1rem))]">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Заказ оформлен!</h1>
@@ -107,7 +107,7 @@ export default function OrderPage() {
 
   if (isOpsAccount) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 pt-[max(1rem,calc(var(--safe-top)+1rem))]">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
           <div className="text-5xl mb-4">🛠️</div>
           <h1 className="text-xl font-extrabold text-gray-900 mb-2">Ops‑аккаунт</h1>
@@ -134,7 +134,7 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] py-4 sm:py-8">
+    <div className="min-h-screen bg-[#f5f5f5] py-4 sm:py-8 pt-[max(1rem,calc(var(--safe-top)+1rem))] sm:pt-8">
       <div className="container mx-auto px-4 max-w-2xl pb-28 sm:pb-8">
         <div className="hidden lg:block mb-4">
           <Breadcrumbs />

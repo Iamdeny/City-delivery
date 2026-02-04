@@ -24,7 +24,7 @@ export default function ProductsError({
                         error.message?.includes('недоступен');
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 pt-[var(--safe-top)] pb-[var(--safe-bottom)]">
       <div className="max-w-lg w-full text-center">
         <div className="mb-6 flex justify-center">
           <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center">

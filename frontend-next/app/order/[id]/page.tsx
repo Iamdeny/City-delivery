@@ -62,7 +62,7 @@ export default function OrderTrackingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20 flex items-center justify-center">
+      <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20 flex items-center justify-center pt-[var(--safe-top)]">
         <div className="text-[15px] text-[#5a5a5a]">Загрузка заказа...</div>
       </div>
     );
@@ -70,7 +70,7 @@ export default function OrderTrackingPage() {
 
   if (error || !order) {
     return (
-      <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20">
+      <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20 pt-[var(--safe-top)]">
         <div className="max-w-xl mx-auto px-4 pt-5">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-[22px] font-extrabold text-[#1a1a1a]">Заказ №{orderId || '—'}</h1>
@@ -99,7 +99,7 @@ export default function OrderTrackingPage() {
   }
 
   return (
-    <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20">
+    <div className="min-h-[var(--app-height,100vh)] bg-[#f5f5f5] pb-20 pt-[var(--safe-top)]">
       <div className="max-w-xl mx-auto px-4 pt-5">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-[22px] font-extrabold text-[#1a1a1a]">

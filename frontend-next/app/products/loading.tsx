@@ -6,7 +6,7 @@ import { ProductSkeleton } from '@/app/components/skeleton/ProductSkeleton';
 
 export default function ProductsLoading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-[var(--safe-top)] lg:pt-0">
       <main className="container mx-auto px-4 py-6">
         <div className="flex gap-6">
           {/* Skeleton для sidebar */}

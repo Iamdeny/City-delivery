@@ -339,9 +339,9 @@ export default function ProductsClient({
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
-      {/* Поисковая строка в стиле Самоката (только на мобильных) */}
-      <div className="lg:hidden mb-4">
+    <div className="flex flex-col lg:flex-row gap-6 w-full">
+      {/* Поиск: опущен ниже для удобного тапа (отступ от верха) */}
+      <div className="lg:hidden mb-4 relative z-10 pt-5">
         <div className="relative">
           <input
             type="text"
@@ -363,7 +363,7 @@ export default function ProductsClient({
               fontFamily: 'Inter, Avenir, Helvetica, Arial, sans-serif',
             }}
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
         </div>
       </div>
 
@@ -388,15 +388,14 @@ export default function ProductsClient({
         )}
       </aside>
 
-      {/* Контент каталога (Banani Catalog: поиск → категории → секции или сетка) */}
-      <div className="flex-1">
+      {/* Контент каталога (поиск → категории → секции или сетка), полная ширина */}
+      <div className="flex-1 min-w-0 w-full">
         {/* Липкая панель: категории + фильтры (мобильные) */}
         <div
-          className="lg:hidden sticky top-[calc(var(--mobile-header-h,112px)+var(--safe-top))] z-[900]
-                     -mx-4 px-4 py-3 mb-3
-                     bg-white backdrop-blur-md border-b border-gray-100"
+          className="lg:hidden sticky top-0 z-[900] py-3 mb-4 w-full bg-white/95 backdrop-blur-md border-b border-gray-100"
+          style={{ top: 'var(--safe-top, 0)' }}
         >
-          <div className="space-y-3">
+          <div className="space-y-3 w-full">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
                 {allCategories.length > 0 && (
@@ -405,7 +404,7 @@ export default function ProductsClient({
                     selectedCategories={selectedCategories}
                     onCategoryChange={handleQuickCategoryChange}
                     singleSelect
-                    className="-mx-4 px-4"
+                    className=""
                   />
                 )}
               </div>
@@ -491,13 +490,7 @@ export default function ProductsClient({
           </div>
         </div>
 
-        <div
-          className={
-            totalItems > 0
-              ? 'pb-[calc(92px+var(--safe-bottom))]'
-              : 'pb-[calc(72px+var(--safe-bottom))]'
-          }
-        >
+        <div className="pb-[calc(84px+var(--safe-bottom))] lg:pb-6">
           {hasFilters ? (
             <ProductGrid
               products={products}
@@ -519,10 +512,11 @@ export default function ProductsClient({
               cart={cartItems}
             />
           ) : (
-            <div className="lg:bg-transparent bg-white rounded-t-[28px] pt-4 -mx-4 lg:mx-0 shadow-[0_-10px_26px_rgba(0,0,0,0.08)] lg:shadow-none">
+            <div className="w-full pt-5 lg:pt-4">
               <ProductSections
                 products={displayProducts}
                 onAddToCart={addToCart}
+                onRemoveFromCart={decrementQuantity}
                 cart={cartItems}
               />
             </div>

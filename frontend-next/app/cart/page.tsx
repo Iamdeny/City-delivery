@@ -19,8 +19,8 @@ export default function CartPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="hidden lg:block container mx-auto px-4 pt-4">
+    <div className="min-h-screen bg-gray-50 pt-[var(--safe-top)] lg:pt-0">
+      <div className="hidden lg:block max-w-[1440px] mx-auto content-x pt-4">
         <Breadcrumbs />
       </div>
       <CartModalContainer
