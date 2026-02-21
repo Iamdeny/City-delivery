@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Указываем корневую директорию для Next.js, чтобы избежать конфликтов с lockfiles в родительской директории
   outputFileTracingRoot: require('path').join(__dirname),
   images: {
     remotePatterns: [
@@ -26,6 +25,14 @@ const nextConfig = {
         hostname: '172.**',
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/api/:path*', // порт вашего бэкенда (5001)
+      },
+    ];
   },
 };
 

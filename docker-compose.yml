@@ -15,33 +15,33 @@ services:
     ports:
       - '6379:6379'
 
-  pgbouncer:
-    build: ./pgbouncer
-    profiles:
-      - production  # Запускается только с профилем "production"
-    ports:
-      - '6432:6432'
-    environment:
-      DATABASES_HOST: postgres
-      DATABASES_PORT: 5432
-      DATABASES_USER: admin
-      DATABASES_PASSWORD: ${DB_PASSWORD}
-      DATABASES_DBNAME: city_delivery
-      DB_PASSWORD: ${DB_PASSWORD}
-    depends_on:
-      - postgres
-    restart: "no"  # Не перезапускать автоматически
-    healthcheck:
-      test: ["CMD", "psql", "-h", "localhost", "-p", "6432", "-U", "admin", "-d", "pgbouncer", "-c", "SHOW VERSION"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+  # pgbouncer:               # (если он тоже закомментирован, оставьте как есть)
+  #   build: ./pgbouncer
+  #   profiles:
+  #     - production
+  #   ports:
+  #     - '6432:6432'
+  #   environment:
+  #     DATABASES_HOST: postgres
+  #     DATABASES_PORT: 5432
+  #     DATABASES_USER: admin
+  #     DATABASES_PASSWORD: ${DB_PASSWORD}
+  #     DATABASES_DBNAME: city_delivery
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #   depends_on:
+  #     - postgres
+  #   restart: "no"
+  #   healthcheck:
+  #     test: ["CMD", "psql", "-h", "localhost", "-p", "6432", "-U", "admin", "-d", "pgbouncer", "-c", "SHOW VERSION"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 5s
 
   backend:
     build: ./backend
     ports:
-      - '5000:5000'
+      - '5001:5000'
     environment:
       DATABASE_URL: postgres://admin:${DB_PASSWORD}@postgres:5432/city_delivery
       REDIS_URL: redis://redis:6379
@@ -52,36 +52,36 @@ services:
       - postgres
       - redis
 
-  frontend:
-    build: ./frontend
-    ports:
-      - '3000:3000'
-    environment:
-      REACT_APP_API_URL: http://localhost:5000
-    depends_on:
-      - backend
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - '3000:3000'
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:5000
+  #   depends_on:
+  #     - backend
 
-  admin:
-    build: ./admin
-    ports:
-      - '3001:3001'
-    environment:
-      REACT_APP_API_URL: http://localhost:5000
-    depends_on:
-      - backend
+  # admin:
+  #   build: ./admin
+  #   ports:
+  #     - '3001:3001'
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:5000
+  #   depends_on:
+  #     - backend
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - backend
-      - frontend
-      - admin
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - '80:80'
+  #     - '443:443'
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #     - ./ssl:/etc/nginx/ssl
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #     - admin
 
 volumes:
   postgres_data:
