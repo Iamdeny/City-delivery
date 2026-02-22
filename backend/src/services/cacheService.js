@@ -1,12 +1,6 @@
-/**
- * Redis Cache Service (улучшенная версия с общим клиентом)
- * Кэширование для 10x faster queries
- * Паттерн: DoorDash / Instacart
- */
-
-const logger = require('../utils/logger');
-const config = require('../../config');
-const redisClient = require('../config/redis'); // общий клиент Redis
+import logger from '../utils/logger.js';
+import config from '../../config.js';
+import redisClient from '../config/redis.js'; // общий клиент Redis (экспортируется через export default)
 
 class CacheService {
   constructor() {
@@ -25,7 +19,6 @@ class CacheService {
       INVENTORY: config.cache?.ttl?.inventory || 60,
     };
 
-    // Подписываемся на события клиента для логирования ошибок (опционально)
     this.client.on('error', (err) => {
       logger.error('Redis client error in CacheService:', err);
       this.stats.errors++;
@@ -34,11 +27,6 @@ class CacheService {
     logger.info('✅ CacheService инициализирован с общим Redis клиентом');
   }
 
-  /**
-   * Получить значение из кэша
-   * @param {string} key - Ключ
-   * @returns {Promise<any|null>}
-   */
   async get(key) {
     try {
       const value = await this.client.get(key);
@@ -46,7 +34,7 @@ class CacheService {
         try {
           const parsed = JSON.parse(value);
           this.stats.hits++;
-          logger.info(`📦 Cache HIT: ${key}`);
+          logger.debug(`📦 Cache HIT: ${key}`);
           return parsed;
         } catch (parseError) {
           logger.error(`❌ Ошибка парсинга кэша для ключа ${key}:`, parseError);
@@ -56,7 +44,7 @@ class CacheService {
         }
       }
       this.stats.misses++;
-      logger.info(`❌ Cache MISS: ${key}`);
+      logger.debug(`❌ Cache MISS: ${key}`);
       return null;
     } catch (error) {
       logger.error(`Ошибка чтения из кэша (${key}):`, error);
@@ -65,17 +53,11 @@ class CacheService {
     }
   }
 
-  /**
-   * Сохранить значение в кэш
-   * @param {string} key - Ключ
-   * @param {any} value - Значение
-   * @param {number} ttl - Время жизни (секунды)
-   */
   async set(key, value, ttl = 300) {
     try {
       const serialized = JSON.stringify(value);
       await this.client.setex(key, ttl, serialized);
-      logger.info(`✅ Cache SET: ${key} (TTL: ${ttl}s)`);
+      logger.debug(`✅ Cache SET: ${key} (TTL: ${ttl}s)`);
       return true;
     } catch (error) {
       logger.error(`Ошибка записи в кэш (${key}):`, error);
@@ -84,14 +66,10 @@ class CacheService {
     }
   }
 
-  /**
-   * Удалить значение из кэша
-   * @param {string} key - Ключ
-   */
   async del(key) {
     try {
       await this.client.del(key);
-      logger.info(`🗑️ Cache DEL: ${key}`);
+      logger.debug(`🗑️ Cache DEL: ${key}`);
       return true;
     } catch (error) {
       logger.error(`Ошибка удаления из кэша (${key}):`, error);
@@ -100,10 +78,6 @@ class CacheService {
     }
   }
 
-  /**
-   * Удалить все ключи по паттерну (использует SCAN для избежания блокировки)
-   * @param {string} pattern - Паттерн (например, "products:*")
-   */
   async delPattern(pattern) {
     try {
       let cursor = '0';
@@ -125,7 +99,7 @@ class CacheService {
         }
       } while (cursor !== '0');
 
-      logger.info(`🗑️ Cache DEL pattern: ${pattern} (${deletedCount} keys)`);
+      logger.debug(`🗑️ Cache DEL pattern: ${pattern} (${deletedCount} keys)`);
       return true;
     } catch (error) {
       logger.error(`Ошибка удаления по паттерну (${pattern}):`, error);
@@ -134,9 +108,6 @@ class CacheService {
     }
   }
 
-  /**
-   * Очистить весь кэш
-   */
   async flush() {
     try {
       await this.client.flushall();
@@ -149,13 +120,6 @@ class CacheService {
     }
   }
 
-  /**
-   * Кэширование с автоматической загрузкой (Cache-Aside Pattern)
-   * @param {string} key - Ключ
-   * @param {Function} loadFunction - Функция загрузки данных (должна возвращать Promise)
-   * @param {number} ttl - Время жизни
-   * @returns {Promise<any>}
-   */
   async getOrLoad(key, loadFunction, ttl = 300) {
     const cached = await this.get(key);
     if (cached !== null) return cached;
@@ -170,48 +134,30 @@ class CacheService {
     }
   }
 
-  // ========== Специализированные методы для предметной области ==========
+  // ========== Специализированные методы ==========
 
-  /**
-   * Кэширование продуктов с учётом фильтров
-   */
   async cacheProducts(products, filters = {}) {
     const key = this.getProductsKey(filters);
     return await this.set(key, products, this.TTL.PRODUCTS);
   }
 
-  /**
-   * Получить продукты из кэша
-   */
   async getProducts(filters = {}) {
     const key = this.getProductsKey(filters);
     return await this.get(key);
   }
 
-  /**
-   * Инвалидация кэша продуктов (всех вариантов фильтрации)
-   */
   async invalidateProducts() {
     return await this.delPattern('products:*');
   }
 
-  /**
-   * Кэширование категорий
-   */
   async cacheCategories(categories) {
     return await this.set('categories:all', categories, this.TTL.CATEGORIES);
   }
 
-  /**
-   * Получить категории из кэша
-   */
   async getCategories() {
     return await this.get('categories:all');
   }
 
-  /**
-   * Кэширование одного продукта
-   */
   async cacheProduct(productId, product) {
     return await this.set(
       `product:${productId}`,
@@ -220,39 +166,24 @@ class CacheService {
     );
   }
 
-  /**
-   * Получить продукт из кэша
-   */
   async getProduct(productId) {
     return await this.get(`product:${productId}`);
   }
 
-  /**
-   * Инвалидация одного продукта
-   */
   async invalidateProduct(productId) {
     return await this.del(`product:${productId}`);
   }
 
-  /**
-   * Кэширование inventory
-   */
   async cacheInventory(darkStoreId, productId, inventory) {
     const key = `inventory:${darkStoreId}:${productId}`;
     return await this.set(key, inventory, this.TTL.INVENTORY);
   }
 
-  /**
-   * Получить inventory из кэша
-   */
   async getInventory(darkStoreId, productId) {
     const key = `inventory:${darkStoreId}:${productId}`;
     return await this.get(key);
   }
 
-  /**
-   * Инвалидация inventory
-   */
   async invalidateInventory(darkStoreId, productId = null) {
     if (productId) {
       return await this.del(`inventory:${darkStoreId}:${productId}`);
@@ -260,13 +191,8 @@ class CacheService {
     return await this.delPattern(`inventory:${darkStoreId}:*`);
   }
 
-  /**
-   * Генерация ключа для продуктов с учётом фильтров (приватный метод)
-   */
   getProductsKey(filters) {
     const parts = ['products'];
-
-    // Сортируем фильтры для консистентности ключа
     const sortedFilters = Object.keys(filters)
       .sort()
       .reduce((acc, key) => {
@@ -279,13 +205,9 @@ class CacheService {
         parts.push(`${key}:${value}`);
       }
     }
-
     return parts.join(':');
   }
 
-  /**
-   * Получить статистику использования кэша
-   */
   getStats() {
     return {
       hits: this.stats.hits,
@@ -299,14 +221,12 @@ class CacheService {
   }
 }
 
-// Singleton с ленивым подключением
+// Синглтон
 let cacheServiceInstance = null;
 
-function getCacheService() {
+export default function getCacheService() {
   if (!cacheServiceInstance) {
     cacheServiceInstance = new CacheService();
   }
   return cacheServiceInstance;
 }
-
-module.exports = getCacheService();

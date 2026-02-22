@@ -21,4 +21,4 @@ redisClient.on('error', (err) => {
   logger.error('❌ Ошибка Redis:', err);
 });
 
-module.exports = redisClient;
+export default redisClient;
