@@ -1,0 +1,41 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import updatePopularProducts from '../updatePopularProducts';
+import * as db from '../../src/config/database';
+
+vi.mock('../../src/config/database', () => ({
+  query: vi.fn(),
+}));
+
+describe('updatePopularProducts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('выполняет транзакцию успешно', async () => {
+    db.query.mockResolvedValueOnce({}); // BEGIN
+    db.query.mockResolvedValueOnce({}); // TRUNCATE
+    db.query.mockResolvedValueOnce({ rowCount: 10 }); // INSERT
+    db.query.mockResolvedValueOnce({}); // COMMIT
+
+    await updatePopularProducts();
+
+    expect(db.query).toHaveBeenCalledTimes(4);
+    expect(db.query).toHaveBeenCalledWith('BEGIN');
+    expect(db.query).toHaveBeenCalledWith('TRUNCATE popular_products');
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO popular_products'),
+      [1000]
+    );
+    expect(db.query).toHaveBeenCalledWith('COMMIT');
+  });
+
+  it('откатывает транзакцию при ошибке', async () => {
+    db.query.mockResolvedValueOnce({}); // BEGIN
+    db.query.mockRejectedValueOnce(new Error('SQL error'));
+
+    await updatePopularProducts();
+
+    expect(db.query).toHaveBeenCalledWith('BEGIN');
+    expect(db.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+});

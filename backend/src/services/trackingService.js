@@ -1,45 +1,90 @@
-/**
- * Real-time Courier Tracking Service
- * Паттерн: Uber Eats / DoorDash Live Tracking
- * 
- * Функционал:
- * - Real-time обновление позиции курьера
- * - Geofencing (автоматические уведомления при приближении)
- * - ETA calculation и updates
- * - History tracking для аналитики
- */
+module.exports = {
+  // Радиусы геозон (метры)
+  GEOFENCE_ZONES: {
+    APPROACHING_STORE: 500,
+    AT_STORE: 100,
+    APPROACHING_CLIENT: 500,
+    AT_CLIENT: 100,
+    DEPARTED_STORE: 200,
+  },
 
-const { query, getClient } = require('../config/database');
-const logger = require('../utils/logger');
-const queueService = require('./queueService');
+  // Средняя скорость для разных типов транспорта (метров в минуту)
+  AVERAGE_SPEED: {
+    foot: 80, // пешком ~5 км/ч
+    bike: 200, // велосипед ~12 км/ч
+    car: 400, // автомобиль ~24 км/ч (в городе)
+    default: 100, // по умолчанию
+  },
 
-// Geofencing зоны (метры)
-const GEOFENCE_ZONES = {
-  APPROACHING_STORE: 500,    // 500м до склада
-  AT_STORE: 100,             // 100м - прибыл на склад
-  APPROACHING_CLIENT: 500,   // 500м до клиента
-  AT_CLIENT: 100,            // 100м - прибыл к клиенту
-  DEPARTED_STORE: 200        // 200м - выехал со склада
+  // Интервалы обновления ETA (секунды)
+  ETA_UPDATE_INTERVALS: {
+    FAST: 10, // <5 мин
+    NORMAL: 30, // 5-15 мин
+    SLOW: 60, // >15 мин
+  },
+
+  // Минимальная точность GPS для обработки (метры)
+  MIN_ACCURACY: 100, // игнорировать обновления с точностью хуже 100 м
+
+  // Время жизни кэша позиции в Redis (секунды)
+  COURIER_POSITION_TTL: 60 * 5, // 5 минут
+
+  // Время жизни блокировок геозон (секунды) - чтобы не блокировать вечно
+  GEOFENCE_LOCK_TTL: 10,
 };
 
-// Интервалы для ETA updates (секунды)
-const ETA_UPDATE_INTERVALS = {
-  FAST: 10,      // Каждые 10 сек когда < 5 минут до доставки
-  NORMAL: 30,    // Каждые 30 сек когда 5-15 минут
-  SLOW: 60       // Каждую минуту когда > 15 минут
+/**
+ * Real-time Courier Tracking Service (улучшенная версия)
+ * Паттерн: Uber Eats / DoorDash Live Tracking
+ *
+ * Изменения:
+ * - Redis для кэша и распределённых блокировок
+ * - Валидация входных данных
+ * - Асинхронная запись истории
+ * - Троттлинг ETA
+ * - Учёт типа транспорта
+ * - Единый формат ответов
+ */
+
+const { query } = require('../config/database');
+const logger = require('../utils/logger');
+const queueService = require('./queueService');
+const redisClient = require('../config/redis'); // предполагаем, что клиент Redis настроен
+const config = require('../config/tracking');
+
+// Константы из конфига
+const {
+  GEOFENCE_ZONES,
+  AVERAGE_SPEED,
+  ETA_UPDATE_INTERVALS,
+  MIN_ACCURACY,
+  COURIER_POSITION_TTL,
+  GEOFENCE_LOCK_TTL,
+} = config;
+
+// Ключи Redis
+const redisKeys = {
+  courierPosition: (courierId) => `courier:${courierId}:position`,
+  courierLastUpdate: (courierId) => `courier:${courierId}:lastUpdate`,
+  geofenceLock: (orderId, event) => `geofence:${orderId}:lock:${event}`,
+  etaLastUpdate: (orderId) => `eta:${orderId}:lastUpdate`,
 };
 
 class TrackingService {
   constructor() {
-    // Кэш последних известных позиций курьеров (в памяти)
-    this.courierPositions = new Map();
-    
-    // Кэш активных геозон для заказов
-    this.activeGeofences = new Map();
-    
-    logger.log('✅ TrackingService инициализирован');
+    // Redis клиент уже должен быть инициализирован
+    logger.info('✅ TrackingService с Redis инициализирован');
   }
-  
+
+  /**
+   * Валидация координат
+   */
+  _validateCoordinates(lat, lng) {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+    return true;
+  }
+
   /**
    * Обновить позицию курьера
    * @param {number} courierId - ID курьера
@@ -49,295 +94,420 @@ class TrackingService {
    */
   async updateCourierLocation(courierId, latitude, longitude, accuracy = null) {
     try {
-      const timestamp = new Date();
-      
-      // 1. Сохраняем в БД
-      await query(
-        `UPDATE couriers 
-         SET current_location_lat = $1,
-             current_location_lng = $2,
-             last_seen = $3
-         WHERE id = $4`,
-        [latitude, longitude, timestamp, courierId]
-      );
-      
-      // 2. Сохраняем в кэш для быстрого доступа
-      const previousPosition = this.courierPositions.get(courierId);
-      const newPosition = {
+      // 1. Валидация
+      if (!courierId || !this._validateCoordinates(latitude, longitude)) {
+        return { success: false, error: 'Некорректные входные данные' };
+      }
+      if (accuracy && accuracy > MIN_ACCURACY) {
+        logger.warn(
+          `📍 Точность GPS слишком низкая (${accuracy}м) для курьера ${courierId}, обновление проигнорировано`
+        );
+        return { success: false, error: 'Низкая точность GPS' };
+      }
+
+      const timestamp = new Date().toISOString();
+
+      // 2. Сохраняем в Redis (быстрый кэш)
+      const positionData = {
         latitude,
         longitude,
         accuracy,
         timestamp,
-        speed: previousPosition ? this.calculateSpeed(previousPosition, { latitude, longitude, timestamp }) : null
       };
-      
-      this.courierPositions.set(courierId, newPosition);
-      
-      // 3. Получаем текущий заказ курьера
+      await redisClient.setex(
+        redisKeys.courierPosition(courierId),
+        COURIER_POSITION_TTL,
+        JSON.stringify(positionData)
+      );
+
+      // 3. Получаем текущий заказ курьера (из БД)
       const orderResult = await query(
         `SELECT o.id, o.client_id, o.status, o.client_latitude, o.client_longitude,
-                d.latitude as store_lat, d.longitude as store_lng
+                d.latitude as store_lat, d.longitude as store_lng,
+                c.vehicle_type
          FROM orders o
          LEFT JOIN dark_stores d ON o.dark_store_id = d.id
+         JOIN couriers c ON c.id = o.courier_id
          WHERE o.courier_id = $1 AND o.status IN ('assigned_to_courier', 'picked_up', 'delivering')
          LIMIT 1`,
         [courierId]
       );
-      
+
       if (orderResult.rows.length === 0) {
-        return { success: true, message: 'Позиция обновлена (нет активного заказа)' };
+        // Нет активного заказа — только обновили позицию
+        logger.info(
+          `📍 Позиция курьера ${courierId} обновлена (нет активного заказа)`
+        );
+        return { success: true, data: { position: positionData } };
       }
-      
+
       const order = orderResult.rows[0];
-      
-      // 4. Проверяем геозоны
-      await this.checkGeofences(courierId, order, latitude, longitude);
-      
-      // 5. Обновляем ETA
-      await this.updateETA(order.id, latitude, longitude, order.client_latitude, order.client_longitude);
-      
-      // 6. Отправляем real-time update через WebSocket
-      // (будет обработано в socketHandler.js)
-      
-      logger.log(`📍 Позиция курьера ${courierId} обновлена: ${latitude}, ${longitude}`);
-      
+
+      // 4. Асинхронно сохраняем историю перемещений (через очередь, чтобы не блокировать ответ)
+      queueService.addJob('saveLocationHistory', {
+        courierId,
+        orderId: order.id,
+        latitude,
+        longitude,
+        accuracy,
+        timestamp,
+      });
+
+      // 5. Проверяем геозоны (с использованием Redis для атомарности)
+      await this._checkGeofences(courierId, order, latitude, longitude);
+
+      // 6. Обновляем ETA (с троттлингом)
+      await this._updateETA(order, latitude, longitude);
+
+      logger.info(
+        `📍 Позиция курьера ${courierId} обновлена для заказа ${order.id}`
+      );
+
       return {
         success: true,
-        position: newPosition,
-        orderId: order.id
+        data: {
+          position: positionData,
+          orderId: order.id,
+        },
       };
-      
     } catch (error) {
-      logger.error('❌ Ошибка обновления позиции курьера:', error);
-      return { success: false, error: error.message };
+      logger.error(`❌ Ошибка обновления позиции курьера ${courierId}:`, error);
+      return { success: false, error: 'Внутренняя ошибка сервера' };
     }
   }
-  
+
   /**
-   * Проверка геозон и отправка уведомлений
+   * Проверка геозон с атомарными блокировками через Redis
    */
-  async checkGeofences(courierId, order, currentLat, currentLng) {
-    const orderId = order.id;
-    const clientId = order.client_id;
-    const status = order.status;
-    
-    // Получаем или создаем состояние геозон для заказа
-    if (!this.activeGeofences.has(orderId)) {
-      this.activeGeofences.set(orderId, {
-        approachingStore: false,
-        atStore: false,
-        departedStore: false,
-        approachingClient: false,
-        atClient: false
-      });
+  async _checkGeofences(courierId, order, currentLat, currentLng) {
+    const {
+      id: orderId,
+      client_id: clientId,
+      status,
+      store_lat,
+      store_lng,
+      client_latitude,
+      client_longitude,
+    } = order;
+
+    // Проверка наличия координат
+    if (status === 'assigned_to_courier' && (!store_lat || !store_lng)) {
+      logger.warn(
+        `⚠️ Заказ ${orderId} не имеет координат склада, пропускаем геозоны`
+      );
+      return;
     }
-    
-    const geofenceState = this.activeGeofences.get(orderId);
-    
-    // Проверяем разные геозоны в зависимости от статуса
+    if (
+      (status === 'picked_up' || status === 'delivering') &&
+      (!client_latitude || !client_longitude)
+    ) {
+      logger.warn(
+        `⚠️ Заказ ${orderId} не имеет координат клиента, пропускаем геозоны`
+      );
+      return;
+    }
+
+    // Функция для атомарной отправки уведомления
+    const sendNotificationOnce = async (
+      eventType,
+      data,
+      priority = 'normal'
+    ) => {
+      const lockKey = redisKeys.geofenceLock(orderId, eventType);
+      // Пытаемся установить блокировку (если ключа нет)
+      const lockAcquired = await redisClient.set(
+        lockKey,
+        'locked',
+        'NX',
+        'EX',
+        GEOFENCE_LOCK_TTL
+      );
+      if (lockAcquired) {
+        await queueService.addNotification(eventType, clientId, data, priority);
+        logger.log(
+          `🔔 Уведомление ${eventType} отправлено для заказа ${orderId}`
+        );
+      } else {
+        logger.log(
+          `⏭️ Уведомление ${eventType} уже отправлялось ранее для заказа ${orderId}`
+        );
+      }
+    };
+
     if (status === 'assigned_to_courier') {
-      // Курьер едет на склад
       const distanceToStore = this.calculateDistance(
         currentLat,
         currentLng,
-        order.store_lat,
-        order.store_lng
+        store_lat,
+        store_lng
       );
-      
-      // Приближается к складу (500м)
-      if (distanceToStore <= GEOFENCE_ZONES.APPROACHING_STORE && !geofenceState.approachingStore) {
-        geofenceState.approachingStore = true;
-        await queueService.addNotification('courier_approaching_store', clientId, {
+
+      if (distanceToStore <= GEOFENCE_ZONES.APPROACHING_STORE) {
+        await sendNotificationOnce('courier_approaching_store', {
           orderId,
           courierId,
-          distance: Math.round(distanceToStore)
+          distance: Math.round(distanceToStore),
         });
-        logger.log(`🚗 Курьер ${courierId} приближается к складу (${Math.round(distanceToStore)}м)`);
       }
-      
-      // Прибыл на склад (100м)
-      if (distanceToStore <= GEOFENCE_ZONES.AT_STORE && !geofenceState.atStore) {
-        geofenceState.atStore = true;
-        await queueService.addNotification('courier_at_store', clientId, {
+      if (distanceToStore <= GEOFENCE_ZONES.AT_STORE) {
+        await sendNotificationOnce('courier_at_store', {
           orderId,
-          courierId
+          courierId,
         });
-        logger.log(`📦 Курьер ${courierId} прибыл на склад`);
       }
     }
-    
+
     if (status === 'picked_up' || status === 'delivering') {
-      // Курьер едет к клиенту
       const distanceToClient = this.calculateDistance(
         currentLat,
         currentLng,
-        order.client_latitude,
-        order.client_longitude
+        client_latitude,
+        client_longitude
       );
-      
-      // Выехал со склада (200м от склада)
-      if (!geofenceState.departedStore) {
-        const distanceFromStore = this.calculateDistance(
-          currentLat,
-          currentLng,
-          order.store_lat,
-          order.store_lng
-        );
-        
-        if (distanceFromStore >= GEOFENCE_ZONES.DEPARTED_STORE) {
-          geofenceState.departedStore = true;
-          await queueService.addNotification('courier_departed_store', clientId, {
+
+      // Выехал со склада
+      const distanceFromStore = this.calculateDistance(
+        currentLat,
+        currentLng,
+        store_lat,
+        store_lng
+      );
+      if (distanceFromStore >= GEOFENCE_ZONES.DEPARTED_STORE) {
+        await sendNotificationOnce(
+          'courier_departed_store',
+          {
             orderId,
             courierId,
-            estimatedMinutes: Math.round(distanceToClient / 50) // Примерно 50м/мин
-          }, 'critical');
-          logger.log(`🚗 Курьер ${courierId} выехал со склада к клиенту`);
-        }
+            estimatedMinutes: Math.round(
+              distanceToClient / this._getSpeed(order.vehicle_type)
+            ),
+          },
+          'critical'
+        );
       }
-      
-      // Приближается к клиенту (500м)
-      if (distanceToClient <= GEOFENCE_ZONES.APPROACHING_CLIENT && !geofenceState.approachingClient) {
-        geofenceState.approachingClient = true;
-        await queueService.addNotification('courier_approaching', clientId, {
-          orderId,
-          courierId,
-          distance: Math.round(distanceToClient),
-          estimatedMinutes: Math.round(distanceToClient / 50)
-        }, 'critical');
-        logger.log(`🚗 Курьер ${courierId} приближается к клиенту (${Math.round(distanceToClient)}м)`);
+
+      if (distanceToClient <= GEOFENCE_ZONES.APPROACHING_CLIENT) {
+        await sendNotificationOnce(
+          'courier_approaching',
+          {
+            orderId,
+            courierId,
+            distance: Math.round(distanceToClient),
+            estimatedMinutes: Math.round(
+              distanceToClient / this._getSpeed(order.vehicle_type)
+            ),
+          },
+          'critical'
+        );
       }
-      
-      // Прибыл к клиенту (100м)
-      if (distanceToClient <= GEOFENCE_ZONES.AT_CLIENT && !geofenceState.atClient) {
-        geofenceState.atClient = true;
-        await queueService.addNotification('courier_arrived', clientId, {
-          orderId,
-          courierId
-        }, 'critical');
-        logger.log(`✅ Курьер ${courierId} прибыл к клиенту`);
+
+      if (distanceToClient <= GEOFENCE_ZONES.AT_CLIENT) {
+        await sendNotificationOnce(
+          'courier_arrived',
+          {
+            orderId,
+            courierId,
+          },
+          'critical'
+        );
       }
     }
-    
-    this.activeGeofences.set(orderId, geofenceState);
   }
-  
+
   /**
-   * Обновить ETA (Estimated Time of Arrival)
+   * Получить скорость для типа транспорта (м/мин)
    */
-  async updateETA(orderId, courierLat, courierLng, clientLat, clientLng) {
+  _getSpeed(vehicleType) {
+    return AVERAGE_SPEED[vehicleType] || AVERAGE_SPEED.default;
+  }
+
+  /**
+   * Обновить ETA с троттлингом
+   */
+  async _updateETA(order, courierLat, courierLng) {
+    const {
+      id: orderId,
+      client_latitude: clientLat,
+      client_longitude: clientLng,
+      vehicle_type,
+    } = order;
+    if (!clientLat || !clientLng) return;
+
+    // Проверяем, когда последний раз обновляли ETA
+    const lastUpdateKey = redisKeys.etaLastUpdate(orderId);
+    const lastUpdate = await redisClient.get(lastUpdateKey);
+    const now = Date.now();
+
+    if (lastUpdate && now - parseInt(lastUpdate) < 5000) {
+      // не чаще раза в 5 секунд
+      logger.debug(
+        `⏱️ ETA для заказа ${orderId} обновлялось недавно, пропускаем`
+      );
+      return;
+    }
+
+    // Обновляем время последнего обновления
+    await redisClient.set(lastUpdateKey, now, 'EX', 60); // живёт минуту
+
     try {
-      const distance = this.calculateDistance(courierLat, courierLng, clientLat, clientLng);
-      
-      // Простая формула ETA: расстояние / средняя скорость
-      // TODO: В будущем заменить на ML-модель с учетом трафика
-      const averageSpeed = 50; // метров в минуту (пешком/велосипед)
-      const estimatedMinutes = Math.ceil(distance / averageSpeed);
-      const estimatedArrival = new Date(Date.now() + estimatedMinutes * 60 * 1000);
-      
-      // Обновляем ETA в БД
+      const distance = this.calculateDistance(
+        courierLat,
+        courierLng,
+        clientLat,
+        clientLng
+      );
+      const speed = this._getSpeed(vehicle_type);
+      const estimatedMinutes = Math.ceil(distance / speed);
+      const estimatedArrival = new Date(
+        Date.now() + estimatedMinutes * 60 * 1000
+      );
+
       await query(
-        `UPDATE orders 
-         SET estimated_delivery_time = $1
-         WHERE id = $2`,
+        `UPDATE orders SET estimated_delivery_time = $1 WHERE id = $2`,
         [estimatedArrival, orderId]
       );
-      
-      // Определяем интервал следующего обновления
-      let updateInterval;
-      if (estimatedMinutes < 5) {
-        updateInterval = ETA_UPDATE_INTERVALS.FAST;
-      } else if (estimatedMinutes < 15) {
-        updateInterval = ETA_UPDATE_INTERVALS.NORMAL;
-      } else {
-        updateInterval = ETA_UPDATE_INTERVALS.SLOW;
-      }
-      
-      logger.log(`⏱️ ETA обновлен для заказа ${orderId}: ${estimatedMinutes} мин (next update: ${updateInterval}s)`);
-      
-      return {
-        success: true,
-        estimatedMinutes,
-        estimatedArrival,
-        distance,
-        updateInterval
-      };
-      
+
+      logger.info(
+        `⏱️ ETA обновлен для заказа ${orderId}: ${estimatedMinutes} мин (транспорт: ${vehicle_type})`
+      );
     } catch (error) {
-      logger.error('❌ Ошибка обновления ETA:', error);
-      return { success: false, error: error.message };
+      logger.error(`❌ Ошибка обновления ETA для заказа ${orderId}:`, error);
     }
   }
-  
+
+  /**
+   * Обновление позиции по userId (для роутера)
+   */
+  async updateCourierLocationByUserId(userId, latitude, longitude, accuracy) {
+    try {
+      const courierResult = await query(
+        'SELECT id FROM couriers WHERE user_id = $1',
+        [userId]
+      );
+      if (courierResult.rows.length === 0) {
+        return { success: false, error: 'Профиль курьера не найден' };
+      }
+      const courierId = courierResult.rows[0].id;
+      return await this.updateCourierLocation(
+        courierId,
+        latitude,
+        longitude,
+        accuracy
+      );
+    } catch (error) {
+      logger.error('Ошибка в updateCourierLocationByUserId:', error);
+      return { success: false, error: 'Внутренняя ошибка сервера' };
+    }
+  }
+
+  /**
+   * Получить информацию о трекинге для клиента
+   */
+  async getOrderTracking(orderId, userId) {
+    try {
+      const orderResult = await query(
+        `SELECT o.id, o.courier_id, o.status,
+                c.current_location_lat, c.current_location_lng, c.last_seen,
+                u.name as courier_name
+         FROM orders o
+         LEFT JOIN couriers c ON o.courier_id = c.id
+         LEFT JOIN users u ON c.user_id = u.id
+         WHERE o.id = $1 AND o.client_id = $2`,
+        [orderId, userId]
+      );
+
+      if (orderResult.rows.length === 0) {
+        return { success: false, error: 'Заказ не найден' };
+      }
+
+      const order = orderResult.rows[0];
+      if (!order.courier_id) {
+        return {
+          success: true,
+          data: { tracking: null, message: 'Курьер ещё не назначен' },
+        };
+      }
+
+      // Пытаемся получить свежую позицию из Redis
+      let position = null;
+      const cached = await redisClient.get(
+        redisKeys.courierPosition(order.courier_id)
+      );
+      if (cached) {
+        position = JSON.parse(cached);
+      }
+
+      return {
+        success: true,
+        data: {
+          tracking: {
+            courierId: order.courier_id,
+            courierName: order.courier_name,
+            latitude: position?.latitude || order.current_location_lat,
+            longitude: position?.longitude || order.current_location_lng,
+            lastUpdate: position?.timestamp || order.last_seen,
+            speed: position?.speed, // скорость не сохраняем в Redis, можно пересчитать при необходимости
+            accuracy: position?.accuracy,
+            status: order.status,
+          },
+        },
+      };
+    } catch (error) {
+      logger.error('Ошибка получения трекинга заказа:', error);
+      return { success: false, error: 'Внутренняя ошибка сервера' };
+    }
+  }
+
   /**
    * Получить историю перемещений курьера
    */
   async getCourierHistory(courierId, orderId, limit = 100) {
     try {
-      // TODO: Создать таблицу courier_location_history для хранения истории
-      // Пока возвращаем текущую позицию из кэша
-      
-      const position = this.courierPositions.get(courierId);
-      
-      return {
-        success: true,
-        history: position ? [position] : []
-      };
-      
+      // Предполагаем, что есть таблица courier_location_history
+      const history = await query(
+        `SELECT latitude, longitude, accuracy, timestamp
+         FROM courier_location_history
+         WHERE courier_id = $1 AND order_id = $2
+         ORDER BY timestamp DESC
+         LIMIT $3`,
+        [courierId, orderId, limit]
+      );
+      return { success: true, data: history.rows };
     } catch (error) {
-      logger.error('❌ Ошибка получения истории курьера:', error);
-      return { success: false, error: error.message };
+      logger.error('Ошибка получения истории курьера:', error);
+      return { success: false, error: 'Внутренняя ошибка сервера' };
     }
   }
-  
+
   /**
-   * Очистить геозоны для завершенного заказа
+   * Очистить геозоны (если нужно вручную) - в Redis они живут с TTL, так что необязательно
    */
-  clearGeofences(orderId) {
-    this.activeGeofences.delete(orderId);
-    logger.log(`🧹 Геозоны очищены для заказа ${orderId}`);
+  async clearGeofences(orderId) {
+    // Можно удалить ключи блокировок по паттерну, но не обязательно
+    logger.info(`🧹 Геозоны для заказа ${orderId} помечены на удаление (TTL)`);
   }
-  
+
   /**
    * Расчет расстояния между двумя точками (Haversine formula)
-   * @returns {number} Расстояние в метрах
    */
   calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // Радиус Земли в метрах
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-    
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+    const R = 6371e3;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    const distance = R * c;
-    return distance;
+
+    return R * c;
   }
-  
+
   /**
-   * Расчет скорости курьера (м/с)
-   */
-  calculateSpeed(previousPosition, currentPosition) {
-    const distance = this.calculateDistance(
-      previousPosition.latitude,
-      previousPosition.longitude,
-      currentPosition.latitude,
-      currentPosition.longitude
-    );
-    
-    const timeDiff = (currentPosition.timestamp - previousPosition.timestamp) / 1000; // секунды
-    
-    if (timeDiff === 0) return 0;
-    
-    const speed = distance / timeDiff; // м/с
-    return Math.round(speed * 100) / 100; // Округляем до 2 знаков
-  }
-  
-  /**
-   * Получить все активные курьеры с позициями
+   * Получить всех активных курьеров с позициями
    */
   async getActiveCouriers() {
     try {
@@ -349,35 +519,35 @@ class TrackingService {
          WHERE c.is_active = true AND c.current_order_id IS NOT NULL
          ORDER BY c.last_seen DESC`
       );
-      
-      // Добавляем данные из кэша
-      const couriers = result.rows.map(courier => {
-        const cachedPosition = this.courierPositions.get(courier.id);
-        return {
-          ...courier,
-          speed: cachedPosition?.speed,
-          accuracy: cachedPosition?.accuracy
-        };
-      });
-      
-      return { success: true, couriers };
-      
+
+      // Обогащаем данными из Redis
+      const couriers = await Promise.all(
+        result.rows.map(async (courier) => {
+          const cached = await redisClient.get(
+            redisKeys.courierPosition(courier.id)
+          );
+          let position = null;
+          if (cached) position = JSON.parse(cached);
+          return {
+            ...courier,
+            speed: position?.speed,
+            accuracy: position?.accuracy,
+            lastSeen: position?.timestamp || courier.last_seen,
+          };
+        })
+      );
+
+      return { success: true, data: couriers };
     } catch (error) {
       logger.error('❌ Ошибка получения активных курьеров:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: 'Внутренняя ошибка сервера' };
     }
   }
 }
 
-// Singleton instance
-let trackingServiceInstance = null;
-
-function getTrackingService() {
-  if (!trackingServiceInstance) {
-    trackingServiceInstance = new TrackingService();
-  }
-  return trackingServiceInstance;
-}
-
-module.exports = getTrackingService();
-
+// Singleton
+let instance = null;
+module.exports = () => {
+  if (!instance) instance = new TrackingService();
+  return instance;
+};

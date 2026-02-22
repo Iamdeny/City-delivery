@@ -1,5 +1,5 @@
 /**
- * Главный файл сервера
+ * Главный файл сервера (улучшенная версия)
  * Масштабируемая архитектура для MVP доставки продуктов
  */
 
@@ -11,58 +11,75 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const fs = require('fs');
+const analyticsRouter = require('./src/routes/analytics');
 
-// Загружаем .env: сначала пробуем корень проекта, затем backend/.env
-const rootEnvPath = path.join(__dirname, '..', '.env');
-const backendEnvPath = path.join(__dirname, '.env');
+// Загрузка конфигурации и логгера
+const config = require('./config');
+const logger = require('./src/utils/logger');
+const { metrics, metricsMiddleware } = require('./src/utils/metrics');
 
-if (fs.existsSync(backendEnvPath)) {
-  // Приоритет у backend/.env (там обычно все переменные)
-  require('dotenv').config({ path: backendEnvPath });
-} else if (fs.existsSync(rootEnvPath)) {
-  // Fallback на корневой .env (для Docker)
-  require('dotenv').config({ path: rootEnvPath });
-} else {
-  // Последний fallback - текущая директория
-  require('dotenv').config();
-}
-
-// Импорт маршрутов
-const authRoutes = require('./src/routes/auth');
-const orderRoutes = require('./src/routes/orders');
-const productRoutes = require('./src/routes/products');
-const cartRoutes = require('./src/routes/cart'); // ✅ Phase 3: Smart Cart
-const trackingRoutes = require('./src/routes/tracking'); // ✅ Phase 3: Real-time Tracking
-const checkoutRoutes = require('./src/routes/checkout'); // ✅ Phase 4: Checkout Optimization
-// const paymentRoutes = require('./src/routes/payments');   // ✅ Payments: ЮKassa Integration
-// TODO: Добавить остальные маршруты
-// const courierRoutes = require('./src/routes/couriers');
-// const pickerRoutes = require('./src/routes/pickers');
-// const adminRoutes = require('./src/routes/admin');
+// Импорт модулей (модульный монолит)
+const { authRouter, createAdminUsersRouter } = require('./src/modules/users');
+const {
+  createOrdersModule,
+  createAdminOrdersRouter,
+} = require('./src/modules/orders');
+const {
+  productsRouter,
+  createInventoryGateway,
+  createDarkStoresRouter,
+  createInventoryRouter,
+  createAdminDarkStoresRouter,
+} = require('./src/modules/inventory');
+const {
+  createAuditLogger,
+  createAdminAuditRouter,
+} = require('./src/modules/audit');
 
 // Импорт WebSocket обработчиков
 const setupWebSocket = require('./src/websocket/socketHandler');
 
-// Импорт сервисов
+// Импорт сервисов (они сами управляют своим состоянием)
 const queueService = require('./src/services/queueService');
+const orderDispatcher = require('./src/services/orderDispatcher');
 
+// ============ ПРОВЕРКА СОЕДИНЕНИЙ ============
+async function checkConnections() {
+  try {
+    // Проверка БД
+    const { query } = require('./src/config/database');
+    await query('SELECT 1');
+    logger.info('✅ Подключение к БД установлено');
+
+    // Проверка Redis
+    const redisClient = require('./src/config/redis');
+    await redisClient.ping();
+    logger.info('✅ Подключение к Redis установлено');
+  } catch (error) {
+    logger.error('❌ Ошибка подключения к базе данных:', error);
+    process.exit(1);
+  }
+}
+
+// ============ СОЗДАНИЕ ПРИЛОЖЕНИЯ ============
 const app = express();
 const server = http.createServer(app);
 
 // Настройка Socket.io
-// Поддержка кастомного домена для Telegram Widget
-const socketOrigins = [
-  'http://localhost:3000',
-  'http://local.severokat.ru:3000',
-  process.env.FRONTEND_URL,
-].filter(Boolean);
-
 const io = socketIo(server, {
   cors: {
-    origin: socketOrigins.length > 0 ? socketOrigins : 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-    credentials: true,
+    origin: (origin, callback) => {
+      if (config.env === 'development') return callback(null, true);
+      if (!origin) return callback(null, true);
+      const allowed = config.cors.allowedOrigins.some((allowed) =>
+        allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+      );
+      allowed
+        ? callback(null, true)
+        : callback(new Error('Not allowed by CORS'));
+    },
+    methods: config.cors.methods,
+    credentials: config.cors.credentials,
   },
 });
 
@@ -71,74 +88,62 @@ const io = socketIo(server, {
 // Безопасность
 app.use(helmet());
 
-// Сжатие ответов
+// Сжатие
 app.use(compression());
 
-// CORS
-// Поддержка кастомного домена для Telegram Widget
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://local.severokat.ru:3000',
-  process.env.FRONTEND_URL,
-  // Поддержка localtunnel (любой поддомен .loca.lt)
-  /^https:\/\/.*\.loca\.lt$/,
-  // Поддержка Cloudflare Tunnel
-  /^https:\/\/.*\.trycloudflare\.com$/,
-].filter(Boolean);
+// Доверие к прокси (для корректной работы rate limit)
+app.set('trust proxy', 1);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Разрешаем запросы без origin (например, мобильные приложения или Postman)
-    if (!origin) return callback(null, true);
-    
-    // В development режиме разрешаем все для удобства разработки
-    if (process.env.NODE_ENV === 'development') {
-      callback(null, true);
-      return;
-    }
-    
-    // Проверяем точное совпадение
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-      return;
-    }
-    
-    // Проверяем регулярные выражения (для localtunnel, Cloudflare и т.д.)
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (allowed instanceof RegExp) {
-        return allowed.test(origin);
+// CORS для HTTP
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (config.env === 'development') return callback(null, true);
+      if (!origin) return callback(null, true);
+      const allowed = config.cors.allowedOrigins.some((allowed) =>
+        allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+      );
+      if (allowed) {
+        callback(null, true);
+      } else {
+        logger.warn(`[CORS] Запрос заблокирован от origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
       }
-      return false;
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      // Логируем для отладки
-      logger.warn(`[CORS] Запрос заблокирован от origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+    },
+    methods: config.cors.methods,
+    allowedHeaders: config.cors.allowedHeaders,
+    credentials: config.cors.credentials,
+  })
+);
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 минут
-  max: 100, // максимум 100 запросов с одного IP
-  message: 'Слишком много запросов, попробуйте позже',
-});
-app.use('/api/', limiter);
+if (!(config.rateLimit.skipInDev && config.env === 'development')) {
+  app.use(
+    '/api/',
+    rateLimit({
+      windowMs: config.rateLimit.windowMs,
+      max: config.rateLimit.max,
+      handler: (req, res) => {
+        res.status(429).json({
+          success: false,
+          error: 'RATE_LIMITED',
+          message: 'Слишком много запросов, попробуйте позже',
+        });
+      },
+    })
+  );
+} else {
+  logger.info('Rate limiting отключён в режиме разработки');
+}
 
-// Парсинг JSON
+// Парсинг тела запроса
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ============ ROUTES ============
+// Метрики
+app.use(metricsMiddleware);
+
+// ============ РОУТИНГ ============
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -150,81 +155,144 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API маршруты
-app.use('/api/auth', authRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes); // ✅ Phase 3: Smart Cart
-app.use('/api/tracking', trackingRoutes); // ✅ Phase 3: Real-time Tracking
-app.use('/api/checkout', checkoutRoutes); // ✅ Phase 4: Checkout Optimization
-// app.use('/api/payments', paymentRoutes); // ✅ Payments: ЮKassa Integration
-// TODO: Добавить остальные маршруты
-// app.use('/api/couriers', courierRoutes);
-// app.use('/api/pickers', pickerRoutes);
-// app.use('/api/admin', adminRoutes);
+// Метрики (in-memory snapshot)
+app.get('/api/metrics', (req, res) => {
+  res.json(metrics.snapshot());
+});
+
+// Инициализация модулей с DI
+let auditLogger, inventoryGateway, ordersModule;
+try {
+  auditLogger = createAuditLogger();
+  inventoryGateway = createInventoryGateway();
+  ordersModule = createOrdersModule({
+    inventoryGateway,
+    queueService,
+    auditLogger,
+    orderDispatcher,
+  });
+} catch (error) {
+  logger.error('❌ Ошибка инициализации модулей:', error);
+  process.exit(1);
+}
+
+// Подключение роутеров
+app.use('/api/auth', authRouter);
+app.use('/api/admin', createAdminUsersRouter({ auditLogger }));
+app.use('/api/orders', ordersModule.ordersRouter);
+app.use(
+  '/api/admin',
+  createAdminOrdersRouter({ inventoryGateway, queueService, auditLogger })
+);
+app.use('/api/admin', createAdminDarkStoresRouter({ auditLogger }));
+app.use('/api/admin', createAdminAuditRouter({ auditLogger }));
+app.use('/api/products', productsRouter);
+app.use('/api/dark-stores', createDarkStoresRouter());
+app.use('/api/inventory', createInventoryRouter());
+
+// Дополнительные роутеры из модуля заказов
+app.use('/api/cart', ordersModule.cartRouter);
+app.use('/api/checkout', ordersModule.checkoutRouter);
+app.use('/api/tracking', ordersModule.trackingRouter);
+
+// Аналитика Функции Рекомендации в Корзине
+app.use('/api/analytics', analyticsRouter);
 
 // Статика для изображений
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(config.uploadsDir));
 
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({
+    success: false,
     error: 'Маршрут не найден',
     path: req.path,
   });
 });
 
-// Error Handler
+// Глобальный обработчик ошибок
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
+  logger.error('Необработанная ошибка:', err);
+  const status = err.status || 500;
+  res.status(status).json({
+    success: false,
     error: err.message || 'Внутренняя ошибка сервера',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(config.env === 'development' && { stack: err.stack }),
   });
 });
 
 // ============ WEBSOCKET ============
-
 setupWebSocket(io);
 
-// ============ SERVER START ============
+// ============ ЗАПУСК СЕРВЕРА ============
+async function startServer() {
+  try {
+    await checkConnections();
 
-const PORT = process.env.PORT || 5000;
+    server.listen(config.port, async () => {
+      logger.info(`🚀 Сервер запущен на порту ${config.port}`);
+      logger.info(
+        `📡 API доступно по адресу: http://localhost:${config.port}/api`
+      );
+      logger.info(`📡 WebSocket доступен на ws://localhost:${config.port}`);
+      logger.info(`🌍 Окружение: ${config.env}`);
 
-server.listen(PORT, async () => {
-  console.log(`🚀 Сервер запущен на порту ${PORT}`);
-  console.log(`📡 API доступно по адресу: http://localhost:${PORT}/api`);
-  console.log(`📡 WebSocket доступен на ws://localhost:${PORT}`);
-  console.log(`🌍 Окружение: ${process.env.NODE_ENV || 'development'}`);
+      // Настройка повторяющихся задач
+      try {
+        await queueService.setupRecurringJobs();
+        logger.info('⏰ Повторяющиеся задачи настроены');
+      } catch (error) {
+        logger.error('❌ Ошибка настройки повторяющихся задач:', error);
+      }
+    });
+  } catch (error) {
+    logger.error('❌ Не удалось запустить сервер:', error);
+    process.exit(1);
+  }
+}
 
-  // Настройка повторяющихся задач
-  await queueService.setupRecurringJobs();
-  console.log(`⏰ Повторяющиеся задачи настроены`);
+startServer();
+// Cервис который раз в сутки пересчитывает популярность товаров на основе количества заказов за последние 30 дней
+const cron = require('node-cron');
+const updatePopularProducts = require('./cron/updatePopularProducts');
+
+// Запускаем обновление популярных товаров каждый день в 3:00
+cron.schedule('0 3 * * *', async () => {
+  logger.info('🔄 Запуск обновления популярных товаров...');
+  await updatePopularProducts();
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+// Также можно выполнить сразу при старте (опционально)
+updatePopularProducts();
 
-  // Закрываем очереди
-  await queueService.close();
+// ============ GRACEFUL SHUTDOWN ============
+async function shutdown(signal) {
+  logger.info(`${signal} получен, завершаем работу...`);
 
-  server.close(() => {
-    console.log('HTTP server closed');
+  try {
+    // Закрываем очереди
+    await queueService.close();
+
+    // Закрываем HTTP сервер
+    await new Promise((resolve) => server.close(resolve));
+
+    // Закрываем соединения с БД
+    const { close: closeDb } = require('./src/config/database');
+    if (closeDb) await closeDb();
+
+    // Закрываем Redis клиент
+    const redisClient = require('./src/config/redis');
+    if (redisClient?.quit) await redisClient.quit();
+
+    logger.info('✅ Все ресурсы освобождены');
     process.exit(0);
-  });
-});
+  } catch (error) {
+    logger.error('❌ Ошибка при завершении:', error);
+    process.exit(1);
+  }
+}
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT signal received: closing HTTP server');
-
-  // Закрываем очереди
-  await queueService.close();
-
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 module.exports = { app, server, io };

@@ -1,0 +1,131 @@
+/**
+ * Design Tokens для стиля Самоката
+ * Извлечено из анализа сайта samokat.ru
+ */
+
+:root {
+  /* === ЦВЕТА === */
+  
+  /* Основные фоны */
+  --samokat-bg-primary: #ffffff;
+  --samokat-bg-secondary: #f2f2f2; /* rgb(242, 242, 242) - body, search */
+  --samokat-bg-dark: #333333; /* Для верхней полосы с часами */
+  
+  /* Акцентные цвета */
+  --samokat-pink-primary: #ff3363; /* rgb(255, 51, 95) - кнопки, цены */
+  --samokat-pink-light: #ffebef; /* Светло-розовый для промо-карточек */
+  --samokat-green-light: #e8f5e9; /* Светло-зеленый для промо-карточек */
+  
+  /* Текст */
+  --samokat-text-primary: #1a1a1a; /* Основной текст */
+  --samokat-text-secondary: #404040; /* rgb(64, 64, 64) - вторичный текст */
+  --samokat-text-tertiary: #666666; /* Третичный текст */
+  --samokat-text-white: #ffffff;
+  
+  /* Границы */
+  --samokat-border-light: #e5e5e5;
+  
+  /* === ТИПОГРАФИКА === */
+  
+  --samokat-font-family: 'Inter', 'Avenir', 'Helvetica', 'Arial', sans-serif;
+  --samokat-font-size-base: 16px;
+  
+  /* Размеры шрифтов */
+  --samokat-font-size-xs: 10px;
+  --samokat-font-size-sm: 12px;
+  --samokat-font-size-base: 16px;
+  --samokat-font-size-lg: 18px;
+  --samokat-font-size-xl: 22px;
+  --samokat-font-size-2xl: 24px;
+  
+  /* Веса шрифтов */
+  --samokat-font-weight-regular: 400;
+  --samokat-font-weight-semibold: 600;
+  --samokat-font-weight-bold: 700;
+  --samokat-font-weight-extrabold: 800;
+  
+  /* === SPACING === */
+  
+  /* Content padding: больше «воздуха» от краёв (аудит 2026) */
+  --content-padding-x: 20px;
+  --content-padding-x-sm: 24px;
+  --content-padding-x-lg: 32px;
+
+  /* Padding */
+  --samokat-padding-xs: 4px;
+  --samokat-padding-sm: 8px;
+  --samokat-padding-md: 12px;
+  --samokat-padding-lg: 16px;
+  --samokat-padding-xl: 24px;
+  
+  /* Margin */
+  --samokat-margin-xs: 4px;
+  --samokat-margin-sm: 8px;
+  --samokat-margin-md: 16px;
+  --samokat-margin-lg: 24px;
+  --samokat-margin-xl: 32px;
+  
+  /* Gap */
+  --samokat-gap-xs: 4px;
+  --samokat-gap-sm: 8px;
+  --samokat-gap-md: 12px;
+  --samokat-gap-lg: 16px;
+  --samokat-gap-xl: 24px;
+  
+  /* === BORDER RADIUS === */
+  
+  --samokat-radius-sm: 8px;
+  --samokat-radius-md: 12px;
+  --samokat-radius-lg: 16px;
+  --samokat-radius-xl: 18px;
+  --samokat-radius-2xl: 20px;
+  --samokat-radius-3xl: 24px;
+  --samokat-radius-full: 40px; /* Для кнопок и pills */
+  
+  /* === КОМПОНЕНТЫ === */
+  
+  /* Поисковая строка */
+  --samokat-search-height: 44px; /* 43.9967px */
+  --samokat-search-padding: 0 12px;
+  --samokat-search-gap: 5px;
+  --samokat-search-icon-size: 16px; /* 15.9951px */
+  
+  /* Кнопки */
+  --samokat-button-padding: 0 12px;
+  --samokat-button-radius: 40px;
+  --samokat-button-font-size: 13.3333px;
+  
+  /* Карточки промо */
+  --samokat-promo-card-min-width: 280px;
+  --samokat-promo-card-padding: 16px;
+  --samokat-promo-card-radius: 18px;
+  
+  /* Заголовки секций */
+  --samokat-section-heading-font-size: 22px;
+  --samokat-section-heading-font-weight: 800;
+  --samokat-section-heading-color: var(--samokat-text-primary);
+  --samokat-section-heading-margin-bottom: 16px;
+  
+  /* === ТЕНИ === */
+  
+  --samokat-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --samokat-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --samokat-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* === BREAKPOINTS === */
+  
+  --samokat-breakpoint-sm: 640px;
+  --samokat-breakpoint-md: 768px;
+  --samokat-breakpoint-lg: 1024px;
+  --samokat-breakpoint-xl: 1280px;
+
+  /* === НОРМЫ 2024–2026 (WCAG 2.2, iOS/Android, малые экраны) === */
+  /* Минимальная ширина viewport для старых устройств (iPhone SE, малые Android) */
+  --viewport-min-width: 320px;
+  /* Минимальный размер зоны нажатия — WCAG 2.2 Level AAA (удобно на touch) */
+  --touch-target-min: 44px;
+  /* Минимальный размер шрифта основного текста (избегаем авто-зума iOS при фокусе) */
+  --font-size-body-min: 16px;
+  /* Минимальная высота строки для читаемости */
+  --line-height-body-min: 1.5;
+}

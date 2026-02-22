@@ -1,0 +1,64 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import request from 'supertest';
+import express from 'express';
+import analyticsRouter from '../analytics';
+import * as db from '../../config/database'; // правильный путь
+
+vi.mock('../../config/database', () => ({
+  query: vi.fn(),
+}));
+
+const app = express();
+app.use(express.json());
+app.use('/api/analytics', analyticsRouter);
+
+describe('POST /api/analytics/recommendation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('возвращает 400, если нет eventType', async () => {
+    const res = await request(app)
+      .post('/api/analytics/recommendation')
+      .send({ productId: 1 });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ success: false, error: 'Invalid data' });
+  });
+
+  it('возвращает 400, если нет productId', async () => {
+    const res = await request(app)
+      .post('/api/analytics/recommendation')
+      .send({ eventType: 'impression' });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ success: false, error: 'Invalid data' });
+  });
+
+  it('возвращает 200 и вызывает insert при корректных данных', async () => {
+    db.query.mockResolvedValue({});
+
+    const res = await request(app).post('/api/analytics/recommendation').send({
+      eventType: 'impression',
+      productId: 1,
+      userId: null,
+      sessionId: 'test-session',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true });
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO recommendation_events'),
+      ['impression', 1, null, 'test-session']
+    );
+  });
+
+  it('обрабатывает ошибку БД', async () => {
+    db.query.mockRejectedValue(new Error('DB error'));
+
+    const res = await request(app)
+      .post('/api/analytics/recommendation')
+      .send({ eventType: 'impression', productId: 1 });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ success: false, error: 'Internal error' });
+  });
+});

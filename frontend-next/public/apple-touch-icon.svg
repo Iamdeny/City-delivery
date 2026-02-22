@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="City Delivery">
+  <defs>
+    <linearGradient id="g" x1="34" y1="22" x2="146" y2="158" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="164" height="164" rx="40" fill="url(#g)"/>
+  <path d="M56 88c0-20 14-36 34-36 12 0 22 5 28 13l-13 10c-4-5-9-8-15-8-10 0-17 7-17 21v1c0 14 7 21 18 21 7 0 12-3 16-8l12 10c-7 9-17 15-31 15-20 0-34-16-34-36v-1Zm66-36h15v72h-15V52Z" fill="#fff"/>
+</svg>
+

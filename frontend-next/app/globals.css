@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design Tokens для стиля Самоката */
+@import './styles/samokat-design-tokens.css';
+/* Premium 2026 (Instacart / DoorDash / Uber Eats) */
+@import './styles/premium-2026.css';
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Dynamic viewport vars (updated by ViewportVars on client) */
+  --app-height: 100dvh;
+  --app-width: 100vw;
+  --vv-offset-top: 0px;
+  --vv-offset-left: 0px;
+  --keyboard-height: 0px;
+
+  /* Safe areas (notch / dynamic island / gesture bar) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* "Real" bottom inset considering keyboard (mobile) */
+  --inset-bottom: max(var(--safe-bottom), var(--keyboard-height));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+html {
+  /* Поддержка старых мобильных с малым разрешением (320px и выше) */
+  min-width: var(--viewport-min-width, 320px);
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+/* Fullscreen app shell sizing */
+body.app-body {
+  min-height: var(--app-height, 100dvh);
+  width: var(--app-width, 100vw);
+  overflow-x: hidden;
+  /* Avoid overscroll “glow/bounce” pulling the whole layout */
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Нормы 2024–2026: минимум 16px для полей ввода (iOS не зумит при фокусе, читаемо на малых экранах) */
+input,
+select,
+textarea {
+  font-size: max(var(--font-size-body-min, 16px), 1rem);
+}
+
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+
+@layer base {
+  :root {
+    /* shadcn-like tokens (minimal subset) */
+    --radius: 0.75rem;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Единые горизонтальные отступы контента в стиле Самоката */
+  .content-x {
+    padding-left: var(--content-padding-x);
+    padding-right: var(--content-padding-x);
+  }
+
+  @media (min-width: 640px) {
+    .content-x {
+      padding-left: var(--content-padding-x-sm);
+      padding-right: var(--content-padding-x-sm);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .content-x {
+      padding-left: var(--content-padding-x-lg);
+      padding-right: var(--content-padding-x-lg);
+    }
+  }
+
+  /* Safe-area helpers (iOS notch / home indicator) */
+  .safe-top {
+    padding-top: var(--safe-top);
+  }
+  .safe-bottom {
+    padding-bottom: var(--safe-bottom);
+  }
+  .safe-x {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  /* Safe-bottom that also reacts to on-screen keyboard */
+  .kb-safe-bottom {
+    padding-bottom: var(--inset-bottom);
+  }
+
+  /* Скрытие scrollbar для горизонтального скролла (стиль Самоката) */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+}

@@ -58,7 +58,7 @@ const CourierApp = () => {
         setRoute(routeData.points);
       }
     } catch (error) {
-      console.error('Ошибка загрузки заказа:', error);
+      Alert.alert('Ошибка', 'Не удалось загрузить заказ');
     }
   };
 

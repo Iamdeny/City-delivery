@@ -1,0 +1,68 @@
+/**
+ * Константы приложения
+ * Все магические числа и строки должны быть здесь
+ * Адаптировано для Next.js (NEXT_PUBLIC_* вместо REACT_APP_*)
+ */
+
+// API конфигурация
+export const API_CONFIG = {
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  ENDPOINTS: {
+    AUTH: '/api/auth',
+    REGISTER: '/api/auth/register',
+    LOGIN: '/api/auth/login',
+    REFRESH_TOKEN: '/api/auth/refresh-token',
+    LOGOUT: '/api/auth/logout',
+    CURRENT_USER: '/api/auth/me',
+    PHONE_SEND_CODE: '/api/auth/phone/send-code',
+    PHONE_VERIFY: '/api/auth/phone/verify',
+    TELEGRAM_AUTH: '/api/auth/telegram',
+    PRODUCTS: '/api/products',
+    ORDERS: '/api/orders',
+    CART: '/api/cart',
+    CATEGORIES: '/api/products/categories',
+    HEALTH: '/api/health',
+  },
+} as const;
+
+// WebSocket конфигурация
+export const WS_CONFIG = {
+  BASE_URL: process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:5000',
+} as const;
+
+// Таймауты и задержки
+export const TIMEOUTS = {
+  DEBOUNCE: 300, // мс - задержка для дебаунса
+  CART_SAVE: 300, // мс - задержка перед сохранением корзины
+} as const;
+
+// Breakpoints для responsive дизайна
+export const BREAKPOINTS = {
+  MOBILE: 1024, // px - все что меньше считается мобильным
+} as const;
+
+// localStorage ключи
+export const STORAGE_KEYS = {
+  CART: 'delivery_app_cart',
+  PREFIX: 'delivery_app_',
+} as const;
+
+// Настройки фильтров
+export const FILTERS = {
+  DEFAULT_PRICE_RANGE: [0, 1000] as [number, number],
+  DEFAULT_SORT: 'relevance' as const,
+} as const;
+
+function envNumber(name: string, fallback: number) {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+// UI-настройки доставки (Самокат-стиль)
+export const DELIVERY_UI = {
+  ETA_MINUTES: envNumber('NEXT_PUBLIC_DELIVERY_ETA_MINUTES', 15),
+  DELIVERY_FEE_RUB: envNumber('NEXT_PUBLIC_DELIVERY_FEE_RUB', 0),
+  MIN_ORDER_RUB: envNumber('NEXT_PUBLIC_MIN_ORDER_RUB', 0),
+} as const;

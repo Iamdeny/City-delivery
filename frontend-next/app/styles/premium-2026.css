@@ -1,0 +1,35 @@
+/**
+ * Premium 2026 Design System
+ * Instacart / DoorDash / Uber Eats inspired
+ * 6×6 base grid, mobile-first
+ */
+
+:root {
+  /* Layout (Instacart Standard) */
+  --premium-margin-mobile: 16px;   /* 1rem - боковые отступы */
+  --premium-gutter: 12px;          /* межколонник */
+  --premium-radius-card: 12px;     /* карточки товаров */
+  --premium-radius-pill: 24px;     /* CTA кнопки (pill) */
+  --premium-radius-search: 24px;   /* поисковая строка */
+
+  /* Colors (синий как в приложении: blue-600 / blue-700) */
+  --premium-white: #FFFFFF;
+  --premium-bg-soft: #F7F7F7;
+  --premium-accent: #2563eb;       /* blue-600 */
+  --premium-accent-hover: #1d4ed8; /* blue-700 */
+  --premium-text: #1a1a1a;
+  --premium-text-secondary: #5a5a5a;
+  --premium-search-bg: #F6F6F6;
+
+  /* Typography */
+  --premium-section-title-size: 20px;
+  --premium-section-title-weight: 700;
+  --premium-section-gap: 32px;
+
+  /* Components */
+  --premium-search-height: 48px;
+  --premium-card-padding: 8px;
+  --premium-card-price-name-gap: 4px;
+  --premium-add-button-size: 32px;
+  --premium-bottom-nav-height: 84px; /* incl. safe area handled separately */
+}
