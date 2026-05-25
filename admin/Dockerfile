@@ -1,5 +1,5 @@
 # admin/Dockerfile (production)
-# Этап сборки
+# Сборка: Vite
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -10,14 +10,11 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Этап раздачи
+# Раздача: nginx (порт 80 внутри контейнера)
 FROM nginx:alpine
 
-# Копируем собранные файлы
-COPY --from=builder /app/build /usr/share/nginx/html
-
-# Копируем пользовательский конфиг nginx (если нужно)
-# COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

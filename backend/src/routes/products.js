@@ -5,8 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
-import getCacheService from '../services/cacheService.js';
-const cacheService = getCacheService();
+const cacheService = require('../services/cacheService');
 const logger = require('../utils/logger');
 
 // Временные моковые данные (если БД не подключена)

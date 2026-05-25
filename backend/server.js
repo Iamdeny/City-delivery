@@ -12,6 +12,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const analyticsRouter = require('./src/routes/analytics');
+const adminAnalyticsRouter = require('./src/routes/admin/analytics');
 
 // Загрузка конфигурации и логгера
 const config = require('./config');
@@ -136,6 +137,9 @@ if (!(config.rateLimit.skipInDev && config.env === 'development')) {
   logger.info('Rate limiting отключён в режиме разработки');
 }
 
+// Где-то после инициализации всех зависимостей
+// require('./telegramBotAuth/telegramBot'); // просто импортируем, чтобы бот запустился
+
 // Парсинг тела запроса
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -189,6 +193,8 @@ app.use('/api/admin', createAdminAuditRouter({ auditLogger }));
 app.use('/api/products', productsRouter);
 app.use('/api/dark-stores', createDarkStoresRouter());
 app.use('/api/inventory', createInventoryRouter());
+
+app.use('/api/admin/analytics', adminAnalyticsRouter);
 
 // Дополнительные роутеры из модуля заказов
 app.use('/api/cart', ordersModule.cartRouter);

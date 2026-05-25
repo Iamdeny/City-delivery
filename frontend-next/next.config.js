@@ -27,10 +27,13 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     return [
+      // Только маршруты без своего Route Handler в app/api/*
+      // НЕ проксируем: /api/bff/* (JWT из cookies), /api/auth/*, /api/products, /api/orders, ...
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*', // порт вашего бэкенда (5001)
+        source: '/api/analytics/:path*',
+        destination: `${apiBase}/api/analytics/:path*`,
       },
     ];
   },

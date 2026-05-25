@@ -59,6 +59,12 @@ function formatError(e: unknown) {
   if (anyErr?.httpStatus === 403) return 'Доступ запрещён (нужна роль admin/manager).';
   const msg = anyErr?.data?.error || anyErr?.data?.message;
   if (typeof msg === 'string' && msg.trim()) return msg;
+  const details = anyErr?.data?.details;
+  if (details && typeof details === 'object') {
+    const fieldErrors = (details as { fieldErrors?: Record<string, string[]> }).fieldErrors;
+    const firstField = fieldErrors && Object.values(fieldErrors)[0]?.[0];
+    if (firstField) return firstField;
+  }
   if (anyErr?.httpStatus) return `HTTP ${anyErr.httpStatus}`;
   return 'Не удалось загрузить пользователей';
 }
@@ -116,7 +122,14 @@ export function UsersTableClient() {
     setError(null);
     try {
       const res = await fetchUsers({ q: q.trim() || undefined, role: role || undefined, isActive: isActive || undefined });
-      setData(res);
+      if (!res?.success) {
+        throw { httpStatus: 400, data: res };
+      }
+      setData({
+        ...res,
+        users: Array.isArray(res.users) ? res.users : [],
+        total: typeof res.total === 'number' ? res.total : (res.users?.length ?? 0),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : formatError(e);
       setError(msg);

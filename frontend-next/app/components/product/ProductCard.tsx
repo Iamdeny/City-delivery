@@ -1,6 +1,6 @@
 /**
- * Карточка товара
- * Client Component - использует useCartActions hook
+ * Карточка товара — Мобильная версия (Самокат Style)
+ * Client Component - оптимизирован для тач-интерфейсов и быстрой отрисовки
  */
 'use client';
 
@@ -15,6 +15,7 @@ interface ProductCardProps {
   quantity: number;
   onAddToCart: (product: Product) => void;
   onRemoveFromCart: (product: Product) => void;
+  isPriority?: boolean; // Для оптимизации LCP первых товаров на экране
 }
 
 export function ProductCard({
@@ -22,6 +23,7 @@ export function ProductCard({
   quantity,
   onAddToCart,
   onRemoveFromCart,
+  isPriority = false,
 }: ProductCardProps) {
   const { handleAddToCart, handleIncrement, handleDecrement } = useCartActions({
     product,
@@ -31,72 +33,84 @@ export function ProductCard({
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-      {/* Изображение */}
-      <div className="aspect-video bg-gray-200 relative">
+    <div className="flex flex-col justify-between bg-white rounded-2xl p-2.5 h-[270px] active:scale-[0.98] transition-transform select-none border border-gray-100/60">
+      
+      {/* Изображение: строго 1:1 (square) для мобильной продуктовой сетки */}
+      <div className="w-full aspect-square bg-gray-50 rounded-xl relative overflow-hidden flex items-center justify-center">
         {product.image ? (
           product.image.startsWith('data:') ? (
-            // Для data URI (SVG placeholder'ы) используем обычный img
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={product.image}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-[85%] h-[85%] object-contain"
+              loading={isPriority ? 'eager' : 'lazy'}
             />
           ) : (
             <Image
               src={product.image}
               alt={product.name}
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              priority={isPriority}
+              sizes="(max-width: 768px) 50vw, 33vw"
+              className="object-contain p-2"
             />
           )
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">
-            Нет изображения
-          </div>
+          <div className="text-gray-400 text-[11px] font-medium">Нет фото</div>
         )}
+        
+        {/* Бейдж отсутствия товара */}
         {!product.inStock && (
-          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs z-10">
-            Нет в наличии
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center z-10">
+            <span className="bg-gray-900/80 text-white font-semibold text-[10px] px-2 py-0.5 rounded-md">
+              Закончился
+            </span>
           </div>
         )}
       </div>
 
-      {/* Контент */}
-      <div className="p-4">
-        <div className="mb-2">
-          <span className="text-xs text-gray-500">{product.category}</span>
-        </div>
-        <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-          {product.name}
-        </h3>
-        {product.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {product.description}
-          </p>
-        )}
+      {/* Информационный блок */}
+      <div className="flex flex-col flex-1 justify-between mt-2">
+        <div className="space-y-0.5">
+          {/* Цена: Всегда сверху над названием по гайдлайнам Самоката */}
+          <div className="flex items-baseline gap-1">
+            <PriceDisplay price={product.price} size="sm" className="font-extrabold text-[15px] text-gray-900" />
+            {/* Пример старой цены, если заложена в типы */}
+            {/* <span className="text-[11px] text-gray-400 line-through">120 ₽</span> */}
+          </div>
 
-        {/* Цена и действия */}
-        <div className="flex items-center justify-between">
-          <PriceDisplay price={product.price} size="lg" />
+          {/* Название: Жесткий лимит в 2 строки для предотвращения деформации грида */}
+          <h3 className="text-[13px] font-normal text-gray-800 leading-tight h-8 line-clamp-2">
+            {product.name}
+          </h3>
+          
+          {/* Вес / Объем: Важная фича для продуктов */}
+          <span className="block text-[11px] text-gray-400 font-medium">
+            {product.description?.slice(0, 15) || '1 шт'} 
+          </span>
+        </div>
+
+        {/* Интерактивная зона (Кнопка / Контролы) */}
+        <div className="mt-2 h-9 w-full">
           {quantity === 0 ? (
             <button
               onClick={handleAddToCart}
               disabled={!product.inStock}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full h-full text-[13px] font-semibold bg-[#FF2E5B] text-white rounded-xl active:bg-[#e0244d] disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
-              В корзину
+              Добавить
             </button>
           ) : (
-            <QuantityControls
-              quantity={quantity}
-              onIncrement={handleIncrement}
-              onDecrement={handleDecrement}
-              variant="premium"
-              size="md"
-            />
+            <div className="w-full h-full bg-gray-100 rounded-xl overflow-hidden">
+              <QuantityControls
+                quantity={quantity}
+                onIncrement={handleIncrement}
+                onDecrement={handleDecrement}
+                variant="minimal" // В Самокате контролы плоские и компактные
+                size="sm"
+              />
+            </div>
           )}
         </div>
       </div>

@@ -16,7 +16,7 @@ const listUsersQuerySchema = z.object({
     .union([z.literal('1'), z.literal('0'), z.literal('true'), z.literal('false')])
     .optional()
     .transform((v) => v === '1' || (v && v.toLowerCase() === 'true')),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
 
@@ -32,6 +32,12 @@ const updateUserAdminBodySchema = z.object({
   role: data.role,
   is_active: data.is_active !== undefined ? data.is_active : data.isActive,
 }));
+
+/** Zod 4: issues; Zod 3: errors */
+function firstZodMessage(err) {
+  const issue = err?.issues?.[0] ?? err?.errors?.[0];
+  return issue?.message || 'VALIDATION_ERROR';
+}
 
 function createAdminUsersRouter({ listUsers, updateUserAdmin, auditLogger }) {
   const router = express.Router();
@@ -58,8 +64,11 @@ function createAdminUsersRouter({ listUsers, updateUserAdmin, auditLogger }) {
     try {
       const parsed = listUsersQuerySchema.safeParse(req.query);
       if (!parsed.success) {
-        const first = parsed.error.errors[0];
-        return res.status(400).json({ success: false, error: first?.message || 'VALIDATION_ERROR', details: parsed.error.flatten() });
+        return res.status(400).json({
+          success: false,
+          error: firstZodMessage(parsed.error),
+          details: parsed.error.flatten(),
+        });
       }
       const { q, role, isActive, limit, offset } = parsed.data;
       const result = await listUsers.execute({
@@ -81,7 +90,7 @@ function createAdminUsersRouter({ listUsers, updateUserAdmin, auditLogger }) {
       const paramParsed = userIdParamSchema.safeParse(req.params);
       const bodyParsed = updateUserAdminBodySchema.safeParse(req.body || {});
       if (!paramParsed.success) {
-        return res.status(400).json({ success: false, error: paramParsed.error.errors[0]?.message || 'USER_ID_INVALID' });
+        return res.status(400).json({ success: false, error: firstZodMessage(paramParsed.error) || 'USER_ID_INVALID' });
       }
       if (!bodyParsed.success) {
         return res.status(400).json({ success: false, error: 'VALIDATION_ERROR', details: bodyParsed.error.flatten() });

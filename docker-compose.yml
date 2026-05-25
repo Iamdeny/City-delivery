@@ -52,23 +52,21 @@ services:
       - postgres
       - redis
 
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - '3000:3000'
-  #   environment:
-  #     REACT_APP_API_URL: http://localhost:5000
-  #   depends_on:
-  #     - backend
+    # frontend:
+    #   build: ./frontend
+    #   ports:
+    #     - '3000:3000'
+    #   environment:
+    #     REACT_APP_API_URL: http://localhost:5000
+    #   depends_on:
+    #     - backend
 
-  # admin:
-  #   build: ./admin
-  #   ports:
-  #     - '3001:3001'
-  #   environment:
-  #     REACT_APP_API_URL: http://localhost:5000
-  #   depends_on:
-  #     - backend
+  admin:
+    build: ./admin
+    ports:
+      - '3001:80'
+    depends_on:
+      - backend
 
   # nginx:
   #   image: nginx:alpine

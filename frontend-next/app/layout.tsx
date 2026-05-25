@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AppShellClient } from './AppShellClient';
 import { ViewportVars } from './system/ViewportVars';
+import { SocketProvider } from '@/lib/socket'; // Импортируем наш провайдер сокетов
 
 export const metadata: Metadata = {
   title: 'City Delivery',
@@ -36,7 +37,10 @@ export default function RootLayout({
     <html lang='ru'>
       <body className="app-body flex flex-col">
         <ViewportVars />
-        <AppShellClient>{children}</AppShellClient>
+        {/* Оборачиваем клиентскую часть приложения в сокет-провайдер */}
+        <SocketProvider>
+          <AppShellClient>{children}</AppShellClient>
+        </SocketProvider>
       </body>
     </html>
   );

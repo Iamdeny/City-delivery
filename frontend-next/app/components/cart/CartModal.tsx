@@ -122,7 +122,7 @@ const CartModal: React.FC<CartModalProps> = ({
     fetchRecommendations(excludeIds, 6)
       .then(setRecommendedProducts)
       .finally(() => setLoadingRecommendations(false));
-  }, [isOpen, hasItems, cartIds]);
+  }, [isOpen, hasItems, onAddToCart, cartIds]);
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {

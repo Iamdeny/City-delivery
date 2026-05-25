@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { authService, type LoginCredentials, type RegisterData, type TelegramAuthData } from '@/app/services/authService';
+import { authService, type LoginCredentials, type RegisterData } from '@/app/services/authService';
 import { logger } from '@/lib/logger';
 import { formatPhone, validatePhone, handlePhoneChange } from '@/lib/phoneMask';
 
@@ -39,6 +39,16 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'input' | 'otp'>('input'); // Для phone метода
+  const [showTelegram, setShowTelegram] = useState(false);
+
+  // Telegram Widget только на HTTPS (избегаем hydration mismatch)
+  useEffect(() => {
+    setShowTelegram(
+      window.location.protocol === 'https:' &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1'
+    );
+  }, []);
 
   // Таймер обратного отсчета для повторной отправки OTP
   useEffect(() => {
@@ -197,9 +207,12 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-[1050] animate-[fadeIn_0.3s_ease-in-out] p-3 sm:p-5 safe-top kb-safe-bottom" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center z-[1050] animate-[fadeIn_0.3s_ease-in-out] px-3 sm:px-5 pb-3 sm:pb-5 safe-top kb-safe-bottom"
+      onClick={onClose}
+    >
       <motion.div
-        className="bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 max-w-[420px] w-full relative animate-[slideUp_0.3s_ease-in-out] shadow-[0_8px_32px_rgba(0,0,0,0.12)] border-none max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
+        className="mt-20 h-[calc(100vh-80px)] max-h-[calc(100vh-80px)] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 max-w-[420px] w-full relative animate-[slideUp_0.3s_ease-in-out] shadow-[0_8px_32px_rgba(0,0,0,0.12)] border-none overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -361,6 +374,7 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
             <motion.form
               key="email-auth"
               onSubmit={handleEmailSubmit}
+              className="flex flex-col"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
@@ -431,11 +445,8 @@ function LoginForm({ onSuccess, onClose, initialMode = 'login' }: LoginFormProps
           )}
         </AnimatePresence>
 
-        {/* Кнопка входа через Telegram - показываем только на HTTPS (не localhost) */}
-        {typeof window !== 'undefined' && 
-         window.location.protocol === 'https:' && 
-         window.location.hostname !== 'localhost' && 
-         window.location.hostname !== '127.0.0.1' && (
+        {/* Кнопка входа через Telegram — только на HTTPS (не localhost) */}
+        {showTelegram && (
           <div className="mt-6">
             <div className="flex items-center text-center my-6 text-gray-500 text-sm">
               <div className="flex-1 border-b border-gray-300"></div>

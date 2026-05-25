@@ -1,6 +1,6 @@
-import logger from '../utils/logger.js';
-import config from '../../config.js';
-import redisClient from '../config/redis.js'; // общий клиент Redis (экспортируется через export default)
+const logger = require('../utils/logger');
+const config = require('../../config');
+const redisClient = require('../config/redis'); // общий клиент Redis
 
 class CacheService {
   constructor() {
@@ -221,12 +221,6 @@ class CacheService {
   }
 }
 
-// Синглтон
-let cacheServiceInstance = null;
-
-export default function getCacheService() {
-  if (!cacheServiceInstance) {
-    cacheServiceInstance = new CacheService();
-  }
-  return cacheServiceInstance;
-}
+// Экспортируем синглтон-инстанс, чтобы require('./cacheService') возвращал объект сервиса
+const cacheServiceInstance = new CacheService();
+module.exports = cacheServiceInstance;

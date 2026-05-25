@@ -169,10 +169,10 @@
 
 ---
 
-## 🔧 Технический стек
+## 🔧 Технический стек (актуален на 2026 год)
 
-### Frontend (Next.js 15)
-- **Framework**: Next.js 15 с App Router
+### Frontend (Next.js 15, React 19)
+- **Framework**: Next.js 15 с App Router (React 19)
 - **UI**: Tailwind CSS + Framer Motion
 - **State Management**: Zustand
 - **Data Fetching**: React Query (@tanstack/react-query)
@@ -191,6 +191,10 @@
 - **Containerization**: Docker
 - **Database**: PostgreSQL с PgBouncer
 - **Scripts**: PowerShell (Windows) + Bash (Linux/Mac)
+
+### Mobile (Android APK)
+- **Expo SDK 56** + WebView → `frontend-next` ([`mobile/README.md`](mobile/README.md))
+- Сборка тестового APK: `cd mobile && npx eas-cli build -p android --profile preview`
 
 ---
 
